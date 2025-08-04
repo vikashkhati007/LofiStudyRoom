@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, SkipBack, SkipForward, Music2 } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Music2 } from "lucide-react" // Removed Timer, Clock
 import { Button } from "@/components/ui/button"
 
 interface Track {
@@ -61,7 +61,7 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
         initial={{ width: 120, height: 40 }}
         animate={{
           width: isExpanded ? 320 : 120,
-          height: isExpanded ? 80 : 40,
+          height: isExpanded ? 80 : 40, // Only music height
           borderRadius: isExpanded ? 24 : 20,
         }}
         transition={{
@@ -73,9 +73,9 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
       >
         <AnimatePresence mode="wait">
           {!isExpanded ? (
-            // Compact State
+            // Compact State (Music)
             <motion.div
-              key="compact"
+              key="compact-music"
               className="flex items-center justify-center h-full px-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -98,15 +98,16 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
               </div>
             </motion.div>
           ) : (
-            // Expanded State
+            // Expanded State (Music)
             <motion.div
-              key="expanded"
-              className="p-4 h-full"
+              key="expanded-music"
+              className="pt-6 px-4 pb-4 h-full flex flex-col justify-between"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
+              {/* Music Controls */}
               <div className="flex items-center justify-between h-full">
                 {/* Track Info */}
                 <div className="flex-1 min-w-0">
