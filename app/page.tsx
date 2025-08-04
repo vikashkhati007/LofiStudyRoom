@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,6 +8,14 @@ import { Play, Pause, SkipBack, SkipForward, Palette, Music } from "lucide-react
 import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
+import NotificationCenter from "./components/notification-center"
+
+interface NotificationItem {
+  id: string
+  message: string
+  timestamp: string
+  type?: "music" | "timer" | "info"
+}
 
 export default function LofiPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -20,10 +28,10 @@ export default function LofiPlayer() {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
-  // Timer states
-  const [timerMinutes, setTimerMinutes] = useState(25)
-  const [timerSeconds, setTimerSeconds] = useState(0)
+  // Timer states - now using totalSecondsRemaining
+  const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60) // Initial work duration in seconds
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timerMode, setTimerMode] = useState<"work" | "break">("work")
   const [workDuration, setWorkDuration] = useState([25])
@@ -34,8 +42,8 @@ export default function LofiPlayer() {
   const rainAudioRef = useRef<HTMLAudioElement>(null)
   const fireAudioRef = useRef<HTMLAudioElement>(null)
   const oceanWavesAudioRef = useRef<HTMLAudioElement>(null)
-  const timerEndSfxRef = useRef<HTMLAudioElement>(null) // New ref for timer end SFX
-  const breakEndSfxRef = useRef<HTMLAudioElement>(null) // New ref for break end SFX
+  const timerEndSfxRef = useRef<HTMLAudioElement>(null)
+  const breakEndSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const playlist = [
@@ -79,6 +87,19 @@ export default function LofiPlayer() {
     currentTime: currentTime,
   }
 
+  // Function to add notifications
+  const addNotification = useCallback((message: string, type: NotificationItem["type"] = "info") => {
+    setNotifications((prev) => [
+      {
+        id: Date.now().toString(),
+        message,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        type,
+      },
+      ...prev,
+    ])
+  }, [])
+
   // Initialize audio and handle metadata/time updates
   useEffect(() => {
     if (audioRef.current) {
@@ -94,6 +115,7 @@ export default function LofiPlayer() {
 
       const handleEnded = () => {
         handleNextTrack()
+        addNotification(`Track ended: ${playlist[currentTrackIndex].title}`, "music")
       }
 
       audio.addEventListener("loadedmetadata", handleLoadedMetadata)
@@ -106,7 +128,7 @@ export default function LofiPlayer() {
         audio.removeEventListener("ended", handleEnded)
       }
     }
-  }, [currentTrackIndex]) // Re-run when track changes
+  }, [currentTrackIndex, addNotification])
 
   // Handle play/pause
   const handlePlayPause = async () => {
@@ -114,13 +136,16 @@ export default function LofiPlayer() {
       try {
         if (isPlaying) {
           await audioRef.current.pause()
+          addNotification("Music paused", "music")
         } else {
-          audioRef.current.src = playlist[currentTrackIndex].src // Ensure correct source
+          audioRef.current.src = playlist[currentTrackIndex].src
           await audioRef.current.play()
+          addNotification(`Music started: ${playlist[currentTrackIndex].title}`, "music")
         }
         setIsPlaying(!isPlaying)
       } catch (error) {
         console.error("Error playing audio:", error)
+        addNotification("Failed to play music", "info")
       }
     }
   }
@@ -131,10 +156,11 @@ export default function LofiPlayer() {
     setCurrentTrackIndex(nextIndex)
     if (audioRef.current) {
       audioRef.current.src = playlist[nextIndex].src
-      audioRef.current.load() // Load new track
+      audioRef.current.load()
       if (isPlaying) {
         audioRef.current.play()
       }
+      addNotification(`Next track: ${playlist[nextIndex].title}`, "music")
     }
   }
 
@@ -143,10 +169,11 @@ export default function LofiPlayer() {
     setCurrentTrackIndex(prevIndex)
     if (audioRef.current) {
       audioRef.current.src = playlist[prevIndex].src
-      audioRef.current.load() // Load new track
+      audioRef.current.load()
       if (isPlaying) {
         audioRef.current.play()
       }
+      addNotification(`Previous track: ${playlist[prevIndex].title}`, "music")
     }
   }
 
@@ -191,6 +218,7 @@ export default function LofiPlayer() {
         timerIntervalRef.current = null
       }
       setIsTimerRunning(false)
+      addNotification("Timer paused", "timer")
     } else {
       // Request notification permission if not granted
       if (Notification.permission !== "granted") {
@@ -203,22 +231,17 @@ export default function LofiPlayer() {
 
       // Start timer
       setIsTimerRunning(true)
+      addNotification(`Timer started: ${timerMode} session`, "timer")
       timerIntervalRef.current = setInterval(() => {
-        setTimerSeconds((prevSeconds) => {
-          if (prevSeconds > 0) {
-            return prevSeconds - 1
-          } else if (timerMinutes > 0) {
-            setTimerMinutes((prevMinutes) => prevMinutes - 1)
-            return 59
-          } else {
-            // Timer finished
+        setTotalSecondsRemaining((prevTotalSeconds) => {
+          if (prevTotalSeconds <= 0) {
+            // Timer has truly finished
             if (timerIntervalRef.current) {
               clearInterval(timerIntervalRef.current)
               timerIntervalRef.current = null
             }
             setIsTimerRunning(false)
 
-            // Play SFX and send notification based on timer mode
             if (timerMode === "work") {
               if (timerEndSfxRef.current) timerEndSfxRef.current.play()
               if (Notification.permission === "granted") {
@@ -227,9 +250,9 @@ export default function LofiPlayer() {
                   icon: "/placeholder.svg?height=64&width=64&text=🔔",
                 })
               }
+              addNotification("Work session finished! Time for a break.", "timer")
               setTimerMode("break")
-              setTimerMinutes(breakDuration[0])
-              setTimerSeconds(0)
+              return breakDuration[0] * 60 // Set next session duration
             } else {
               // Break session finished
               if (breakEndSfxRef.current) breakEndSfxRef.current.play()
@@ -239,12 +262,12 @@ export default function LofiPlayer() {
                   icon: "/placeholder.svg?height=64&width=64&text=🔔",
                 })
               }
+              addNotification("Break session finished! Time for a new work session.", "timer")
               setTimerMode("work")
-              setTimerMinutes(workDuration[0])
-              setTimerSeconds(0)
+              return workDuration[0] * 60 // Set next session duration
             }
-
-            return 0
+          } else {
+            return prevTotalSeconds - 1
           }
         })
       }, 1000)
@@ -258,19 +281,18 @@ export default function LofiPlayer() {
     }
     setIsTimerRunning(false)
     setTimerMode("work")
-    setTimerMinutes(workDuration[0])
-    setTimerSeconds(0)
+    setTotalSecondsRemaining(workDuration[0] * 60) // Reset to initial work duration
+    addNotification("Timer reset", "timer")
   }
 
-  // Update timer display when work/break duration changes
+  // Update totalSecondsRemaining when work/break duration changes, only if not running
   useEffect(() => {
     if (!isTimerRunning) {
       if (timerMode === "work") {
-        setTimerMinutes(workDuration[0])
+        setTotalSecondsRemaining(workDuration[0] * 60)
       } else {
-        setTimerMinutes(breakDuration[0])
+        setTotalSecondsRemaining(breakDuration[0] * 60)
       }
-      setTimerSeconds(0)
     }
   }, [workDuration, breakDuration, timerMode, isTimerRunning])
 
@@ -283,6 +305,14 @@ export default function LofiPlayer() {
     }
   }, [])
 
+  const handleClearNotifications = useCallback(() => {
+    setNotifications([])
+  }, [])
+
+  // Derive minutes and seconds for display
+  const displayMinutes = Math.floor(totalSecondsRemaining / 60)
+  const displaySeconds = totalSecondsRemaining % 60
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Audio Elements */}
@@ -290,8 +320,9 @@ export default function LofiPlayer() {
       <audio ref={rainAudioRef} src="/rain.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={fireAudioRef} src="/fire.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={oceanWavesAudioRef} src="/ocean-waves.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={timerEndSfxRef} src="/timer-end.mp3" preload="auto" crossOrigin="anonymous" /> {/* Timer end SFX */}
-      <audio ref={breakEndSfxRef} src="/break-end.mp3" preload="auto" crossOrigin="anonymous" /> {/* Break end SFX */}
+      <audio ref={timerEndSfxRef} src="/timer-end.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={breakEndSfxRef} src="/break-end.mp3" preload="auto" crossOrigin="anonymous" />
+
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image src="/images/lofi-bedroom-scene.png" alt="Cozy study room" fill className="object-cover" priority />
@@ -305,6 +336,7 @@ export default function LofiPlayer() {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/40" />
       </div>
+
       {/* Music Dynamic Island (Top Center) */}
       <DynamicIsland
         track={currentTrack}
@@ -313,10 +345,11 @@ export default function LofiPlayer() {
         onNext={handleNextTrack}
         onPrevious={handlePreviousTrack}
       />
+
       {/* Timer Dynamic Island (Bottom Left) */}
       <TimerDynamicIsland
-        timerMinutes={timerMinutes}
-        timerSeconds={timerSeconds}
+        timerMinutes={displayMinutes} // Pass derived minutes
+        timerSeconds={displaySeconds} // Pass derived seconds
         isTimerRunning={isTimerRunning}
         timerMode={timerMode}
         workDuration={workDuration[0]}
@@ -326,6 +359,10 @@ export default function LofiPlayer() {
         onWorkDurationChange={(val) => setWorkDuration(val)}
         onBreakDurationChange={(val) => setBreakDuration(val)}
       />
+
+      {/* Notification Center (Top Left) */}
+      <NotificationCenter notifications={notifications} onClearNotifications={handleClearNotifications} />
+
       {/* Settings Toggle Button */}
       <div className="absolute right-4 top-4 z-20">
         <Button
@@ -343,6 +380,7 @@ export default function LofiPlayer() {
           </div>
         </Button>
       </div>
+
       {/* Right Sidebar - Animated iOS Style Glassmorphism */}
       <div
         className={`absolute right-4 top-20 bottom-4 w-72 transition-all duration-500 ease-out ${
@@ -442,6 +480,7 @@ export default function LofiPlayer() {
           </Tabs>
         </div>
       </div>
+
       {/* Music Player Controls - Bottom Center (kept for consistency with previous state, though Dynamic Island now handles it) */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
         <div className="ios-glass rounded-2xl p-4">
