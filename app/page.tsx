@@ -4,12 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Play, Pause, SkipBack, SkipForward, Palette, Music } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare } from "lucide-react" // Added MessageSquare
 import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
-import ToastNotification from "./components/toast-notification" // New import
+import ToastNotification from "./components/toast-notification"
+import WorldChat from "./components/world-chat" // New import
 
 interface NotificationItem {
   id: string
@@ -30,7 +31,8 @@ export default function LofiPlayer() {
   const [duration, setDuration] = useState(0)
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
-  const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null) // New state for toast
+  const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null)
+  const [isChatOpen, setIsChatOpen] = useState(false) // New state for chat
 
   // Timer states - now using totalSecondsRemaining
   const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60) // Initial work duration in seconds
@@ -394,6 +396,19 @@ export default function LofiPlayer() {
           </div>
         </Button>
       </div>
+
+      {/* World Chat Button */}
+      <div className="absolute bottom-4 right-4 z-20">
+        <Button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
+        >
+          <MessageSquare className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* World Chat Component */}
+      <WorldChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
       {/* Right Sidebar - Animated iOS Style Glassmorphism */}
       <div
