@@ -9,6 +9,7 @@ import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
+import ToastNotification from "./components/toast-notification" // New import
 
 interface NotificationItem {
   id: string
@@ -29,6 +30,7 @@ export default function LofiPlayer() {
   const [duration, setDuration] = useState(0)
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null) // New state for toast
 
   // Timer states - now using totalSecondsRemaining
   const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60) // Initial work duration in seconds
@@ -89,16 +91,25 @@ export default function LofiPlayer() {
 
   // Function to add notifications
   const addNotification = useCallback((message: string, type: NotificationItem["type"] = "info") => {
-    setNotifications((prev) => [
-      {
-        id: Date.now().toString(),
-        message,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        type,
-      },
-      ...prev,
-    ])
+    const newNotification: NotificationItem = {
+      id: Date.now().toString(),
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      type,
+    }
+    setNotifications((prev) => [newNotification, ...prev])
+    setLatestNotification(newNotification) // Set the latest notification for toast
   }, [])
+
+  // Effect to clear latestNotification (toast) after a delay
+  useEffect(() => {
+    if (latestNotification) {
+      const timer = setTimeout(() => {
+        setLatestNotification(null)
+      }, 4000) // Display for 4 seconds
+      return () => clearTimeout(timer)
+    }
+  }, [latestNotification])
 
   // Initialize audio and handle metadata/time updates
   useEffect(() => {
@@ -346,10 +357,13 @@ export default function LofiPlayer() {
         onPrevious={handlePreviousTrack}
       />
 
+      {/* Toast Notification (Top Center, below Dynamic Island) */}
+      <ToastNotification notification={latestNotification} onClose={() => setLatestNotification(null)} />
+
       {/* Timer Dynamic Island (Bottom Left) */}
       <TimerDynamicIsland
-        timerMinutes={displayMinutes} // Pass derived minutes
-        timerSeconds={displaySeconds} // Pass derived seconds
+        timerMinutes={displayMinutes}
+        timerSeconds={displaySeconds}
         isTimerRunning={isTimerRunning}
         timerMode={timerMode}
         workDuration={workDuration[0]}
