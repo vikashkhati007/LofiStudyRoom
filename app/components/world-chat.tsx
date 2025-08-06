@@ -203,7 +203,7 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 50 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="fixed bottom-20 right-4 w-80 h-[400px] ios-glass-card rounded-2xl flex flex-col z-50"
+          className="fixed bottom-10 right-4 w-80 h-[400px] ios-glass-card rounded-2xl flex flex-col z-50"
         >
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <h3 className="text-white font-semibold text-lg flex items-center gap-2">

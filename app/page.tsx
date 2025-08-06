@@ -469,19 +469,21 @@ export default function LofiPlayer() {
       </div>
 
       {/* World Chat Button with Unread Count */}
-      <div className="absolute bottom-4 right-4 z-20">
-        <Button
-          onClick={handleChatToggle}
-          className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20 relative"
-        >
-          <MessageSquare className="h-6 w-6" />
-          {unreadMessageCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1">
-              {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-            </span>
-          )}
-        </Button>
-      </div>
+      {!isChatOpen && (
+        <div className="absolute bottom-4 right-4 z-20">
+          <Button
+            onClick={handleChatToggle}
+            className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20 relative"
+          >
+            <MessageSquare className="h-6 w-6" />
+            {unreadMessageCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1">
+                {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* World Chat Component */}
       <WorldChat 
