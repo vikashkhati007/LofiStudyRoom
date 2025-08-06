@@ -46,24 +46,26 @@ export default function NotificationCenter({ notifications, onClearNotifications
             // Compact State
             <motion.div
               key="compact"
-              className="flex items-center justify-center h-full relative"
+              className="flex items-center justify-center h-full"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <Bell className="h-5 w-5 text-white/80" />
-              {unreadCount > 0 && (
-                <motion.span
-                  className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                >
-                  {unreadCount}
-                </motion.span>
-              )}
+              <div className="relative">
+                <Bell className="h-5 w-5 text-white/80" />
+                {unreadCount > 0 && (
+                  <motion.span
+                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center border border-white/20"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </motion.span>
+                )}
+              </div>
             </motion.div>
           ) : (
             // Expanded State
