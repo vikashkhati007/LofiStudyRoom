@@ -448,6 +448,7 @@ export default function LofiPlayer() {
       />
 
       {/* Notification Center (Top Left) */}
+      {/* @ts-ignore */}
       <NotificationCenter notifications={notifications} onClearNotifications={handleClearNotifications} />
 
       {/* Settings Toggle Button */}

@@ -119,6 +119,7 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
           COLLECTION_ID_MESSAGES,
           [Query.orderDesc("timestamp"), Query.limit(50)] // Fetch latest 50 messages
         )
+      {/* @ts-ignore */}
         const initialMessages = response.documents.reverse() as Message[]
         setMessages(initialMessages)
         
