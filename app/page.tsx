@@ -4,19 +4,27 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare } from "lucide-react" // Added MessageSquare
+import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare } from 'lucide-react'
 import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
 import ToastNotification from "./components/toast-notification"
-import WorldChat from "./components/world-chat" // New import
+import WorldChat from "./components/world-chat"
 
 interface NotificationItem {
   id: string
   message: string
   timestamp: string
-  type?: "music" | "timer" | "info"
+  type?: "music" | "timer" | "info" | "chat"
+}
+
+interface Message {
+  $id: string
+  senderName: string
+  messageContent: string
+  timestamp: string
+  senderId: string
 }
 
 export default function LofiPlayer() {
@@ -32,10 +40,13 @@ export default function LofiPlayer() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null)
-  const [isChatOpen, setIsChatOpen] = useState(false) // New state for chat
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+  const processedNotificationIds = useRef<Set<string>>(new Set()) // Track processed notifications
 
   // Timer states - now using totalSecondsRemaining
-  const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60) // Initial work duration in seconds
+  const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timerMode, setTimerMode] = useState<"work" | "break">("work")
   const [workDuration, setWorkDuration] = useState([25])
@@ -52,8 +63,8 @@ export default function LofiPlayer() {
 
   const playlist = [
     { title: "Lofi Study Session", artist: "Chillhop Collective", src: "/lofi.mp3" },
-    { title: "Midnight Chill", artist: "Lofi Beats", src: "/lofi.mp3" }, // Using same lofi.mp3 for demo
-    { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" }, // Using same lofi.mp3 for demo
+    { title: "Midnight Chill", artist: "Lofi Beats", src: "/lofi.mp3" },
+    { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
   ]
 
   const scenes = [
@@ -86,13 +97,16 @@ export default function LofiPlayer() {
   const currentTrack = {
     title: playlist[currentTrackIndex].title,
     artist: playlist[currentTrackIndex].artist,
-    album: "Lofi Dreams Vol. 3", // Placeholder album
+    album: "Lofi Dreams Vol. 3",
     duration: duration,
     currentTime: currentTime,
   }
 
-  // Function to add notifications
+  // Function to add notifications (excluding chat messages)
   const addNotification = useCallback((message: string, type: NotificationItem["type"] = "info") => {
+    // Don't add chat messages to the notification center
+    if (type === "chat") return
+    
     const newNotification: NotificationItem = {
       id: Date.now().toString(),
       message,
@@ -100,15 +114,75 @@ export default function LofiPlayer() {
       type,
     }
     setNotifications((prev) => [newNotification, ...prev])
-    setLatestNotification(newNotification) // Set the latest notification for toast
+    setLatestNotification(newNotification)
   }, [])
+
+  // Handle new chat messages
+  const handleNewChatMessage = useCallback((message: Message) => {
+    console.log("handleNewChatMessage called with:", message.$id, "from:", message.senderName, "senderId:", message.senderId, "currentUserId:", currentUser?.id)
+    
+    // Check if we've already processed this notification
+    if (processedNotificationIds.current.has(message.$id)) {
+      console.log("Notification already processed, skipping:", message.$id)
+      return
+    }
+    
+    // Mark notification as processed
+    processedNotificationIds.current.add(message.$id)
+    
+    // ONLY show notifications for messages from OTHER users (not the current user's own messages)
+    // This means: if the message sender is NOT the current user, show notification (receiver sees it)
+    // if the message sender IS the current user, don't show notification (sender doesn't see it)
+    if (message.senderId !== currentUser?.id) {
+      console.log("Message is from another user, showing notification to receiver:", message.senderName)
+      
+      // Only increment unread count if chat is closed
+      if (!isChatOpen) {
+        console.log("Chat is closed, incrementing unread count")
+        setUnreadMessageCount(prev => {
+          console.log("Unread count changing from", prev, "to", prev + 1)
+          return prev + 1
+        })
+      } else {
+        console.log("Chat is open, not incrementing unread count")
+      }
+      
+      // Show toast notification for messages from others (receiver sees this)
+      const truncatedMessage = message.messageContent.length > 40 
+        ? `${message.messageContent.substring(0, 40)}...` 
+        : message.messageContent
+      
+      const chatNotification: NotificationItem = {
+        id: message.$id, // Use message ID to prevent duplicate toasts
+        message: `💬 ${message.senderName}: ${truncatedMessage}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        type: "chat",
+      }
+      console.log("Setting toast notification for message from:", message.senderName)
+      setLatestNotification(chatNotification)
+    } else {
+      console.log("Message is from current user (sender), NO notification will be shown to sender")
+    }
+  }, [currentUser?.id, isChatOpen])
+
+  // Handle chat open/close
+  const handleChatToggle = () => {
+    if (!isChatOpen) {
+      // Opening chat - clear unread count
+      console.log("Opening chat, clearing unread count")
+      setUnreadMessageCount(0)
+      // Clear processed notification IDs when opening chat to allow new notifications
+      processedNotificationIds.current.clear()
+    }
+    setIsChatOpen(!isChatOpen)
+  }
 
   // Effect to clear latestNotification (toast) after a delay
   useEffect(() => {
     if (latestNotification) {
       const timer = setTimeout(() => {
         setLatestNotification(null)
-      }, 4000) // Display for 4 seconds
+      }, 4000)
       return () => clearTimeout(timer)
     }
   }, [latestNotification])
@@ -225,7 +299,6 @@ export default function LofiPlayer() {
   // Timer functions
   const startTimer = () => {
     if (isTimerRunning) {
-      // Pause timer
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current)
         timerIntervalRef.current = null
@@ -233,7 +306,6 @@ export default function LofiPlayer() {
       setIsTimerRunning(false)
       addNotification("Timer paused", "timer")
     } else {
-      // Request notification permission if not granted
       if (Notification.permission !== "granted") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
@@ -242,13 +314,11 @@ export default function LofiPlayer() {
         })
       }
 
-      // Start timer
       setIsTimerRunning(true)
       addNotification(`Timer started: ${timerMode} session`, "timer")
       timerIntervalRef.current = setInterval(() => {
         setTotalSecondsRemaining((prevTotalSeconds) => {
           if (prevTotalSeconds <= 0) {
-            // Timer has truly finished
             if (timerIntervalRef.current) {
               clearInterval(timerIntervalRef.current)
               timerIntervalRef.current = null
@@ -265,9 +335,8 @@ export default function LofiPlayer() {
               }
               addNotification("Work session finished! Time for a break.", "timer")
               setTimerMode("break")
-              return breakDuration[0] * 60 // Set next session duration
+              return breakDuration[0] * 60
             } else {
-              // Break session finished
               if (breakEndSfxRef.current) breakEndSfxRef.current.play()
               if (Notification.permission === "granted") {
                 new Notification("Break session finished!", {
@@ -277,7 +346,7 @@ export default function LofiPlayer() {
               }
               addNotification("Break session finished! Time for a new work session.", "timer")
               setTimerMode("work")
-              return workDuration[0] * 60 // Set next session duration
+              return workDuration[0] * 60
             }
           } else {
             return prevTotalSeconds - 1
@@ -294,11 +363,10 @@ export default function LofiPlayer() {
     }
     setIsTimerRunning(false)
     setTimerMode("work")
-    setTotalSecondsRemaining(workDuration[0] * 60) // Reset to initial work duration
+    setTotalSecondsRemaining(workDuration[0] * 60)
     addNotification("Timer reset", "timer")
   }
 
-  // Update totalSecondsRemaining when work/break duration changes, only if not running
   useEffect(() => {
     if (!isTimerRunning) {
       if (timerMode === "work") {
@@ -309,7 +377,6 @@ export default function LofiPlayer() {
     }
   }, [workDuration, breakDuration, timerMode, isTimerRunning])
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) {
@@ -322,9 +389,15 @@ export default function LofiPlayer() {
     setNotifications([])
   }, [])
 
-  // Derive minutes and seconds for display
   const displayMinutes = Math.floor(totalSecondsRemaining / 60)
   const displaySeconds = totalSecondsRemaining % 60
+
+  // Load user data from localStorage (Note: In production, avoid localStorage in artifacts)
+  useEffect(() => {
+    // Simulate loading user data - in a real app, this would come from authentication
+    const simulatedUser = { id: 'user_' + Math.random().toString(36).substr(2, 9), name: 'You' }
+    setCurrentUser(simulatedUser)
+  }, [])
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -339,14 +412,12 @@ export default function LofiPlayer() {
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image src="/images/lofi-bedroom-scene.png" alt="Cozy study room" fill className="object-cover" priority />
-        {/* Film Grain Overlay */}
         <div
           className="absolute inset-0 opacity-30 mix-blend-multiply"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           }}
         />
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/40" />
       </div>
 
@@ -359,7 +430,7 @@ export default function LofiPlayer() {
         onPrevious={handlePreviousTrack}
       />
 
-      {/* Toast Notification (Top Center, below Dynamic Island) */}
+      {/* Message Toast Notification (Top Center, below Dynamic Island) */}
       <ToastNotification notification={latestNotification} onClose={() => setLatestNotification(null)} />
 
       {/* Timer Dynamic Island (Bottom Left) */}
@@ -397,18 +468,27 @@ export default function LofiPlayer() {
         </Button>
       </div>
 
-      {/* World Chat Button */}
+      {/* World Chat Button with Unread Count */}
       <div className="absolute bottom-4 right-4 z-20">
         <Button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
+          onClick={handleChatToggle}
+          className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20 relative"
         >
           <MessageSquare className="h-6 w-6" />
+          {unreadMessageCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1">
+              {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+            </span>
+          )}
         </Button>
       </div>
 
       {/* World Chat Component */}
-      <WorldChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <WorldChat 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+        onNewMessage={handleNewChatMessage}
+      />
 
       {/* Right Sidebar - Animated iOS Style Glassmorphism */}
       <div
@@ -510,7 +590,7 @@ export default function LofiPlayer() {
         </div>
       </div>
 
-      {/* Music Player Controls - Bottom Center (kept for consistency with previous state, though Dynamic Island now handles it) */}
+      {/* Music Player Controls - Bottom Center */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
         <div className="ios-glass rounded-2xl p-4">
           <div className="flex items-center gap-4">
