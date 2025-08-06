@@ -14,7 +14,7 @@ interface Message {
   senderName: string
   messageContent: string
   timestamp: string
-  senderId: string
+  senderId: string // Ensure this is string
 }
 
 interface WorldChatProps {
@@ -157,7 +157,7 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
             }
             
             // Only trigger notification callback for messages from other users
-            if (newMessage.senderId !== currentUser.id && onNewMessage) {
+             if (newMessage.senderId !== currentUser.id && onNewMessage) {
               console.log("Triggering notification for message:", newMessage.$id, "from:", newMessage.senderName)
               onNewMessage(newMessage)
             }
@@ -184,7 +184,7 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
 
     try {
       await databases.createDocument(DATABASE_ID, COLLECTION_ID_MESSAGES, ID.unique(), {
-        senderId: parseInt(currentUser.id),
+        senderId: currentUser.id, // Remove parseInt to keep it as string
         senderName: currentUser.name,
         messageContent: [inputMessage.trim()],
         timestamp: new Date().toISOString(),
