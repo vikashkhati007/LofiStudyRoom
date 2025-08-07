@@ -60,10 +60,11 @@ export default function LofiPlayer() {
   const timerEndSfxRef = useRef<HTMLAudioElement>(null)
   const breakEndSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
 
   const playlist = [
-    { title: "Lofi Study Session", artist: "Chillhop Collective", src: "/lofi.mp3" },
-    { title: "Midnight Chill", artist: "Lofi Beats", src: "/lofi.mp3" },
+    { title: "Idea 15", artist: "Gibran Alcocer", src: "/music/Idea 15 - Gibran Alcocer.mp3" },
+    { title: "Idea 20 - Kurate Music", artist: "Gibran Alcocer", src: "/music/Gibran Alcocer - Idea 20 - Kurate Music.mp3" },
     { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
   ]
 
