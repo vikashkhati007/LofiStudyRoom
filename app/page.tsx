@@ -593,36 +593,30 @@ export default function LofiPlayer() {
         </div>
       </div>
 
-      {/* Music Player Controls - Bottom Center */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-        <div className="ios-glass rounded-2xl p-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20 rounded-xl"
+      {/* Music Player Controls - Bottom Center - Ultra Compact */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+        <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+          <div className="flex items-center gap-1">
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
               onClick={handlePreviousTrack}
             >
-              <SkipBack className="h-5 w-5" />
-            </Button>
+              <SkipBack className="h-4 w-4" />
+            </button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20 w-12 h-12 rounded-xl"
+            <button
+              className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
               onClick={handlePlayPause}
             >
-              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
-            </Button>
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+            </button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/20 rounded-xl"
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
               onClick={handleNextTrack}
             >
-              <SkipForward className="h-5 w-5" />
-            </Button>
+              <SkipForward className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
