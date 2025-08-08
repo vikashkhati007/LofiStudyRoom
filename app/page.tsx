@@ -72,7 +72,7 @@ export default function LofiPlayer() {
     {
       id: "ambient",
       name: "Ambient",
-      image: "/images/ambient.png",
+      image: "/images/cartoon-landscape-tropical-island.png",
       color: "from-blue-500/20 to-cyan-500/20",
     },
   ]
@@ -85,9 +85,9 @@ export default function LofiPlayer() {
       { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
     ],
     "ambient": [
-      { title: "Ambient Track 1", artist: "Nature Sounds", src: "/music/ambient/song1.mp3" },
-      { title: "Ambient Track 2", artist: "Peaceful Sounds", src: "/music/ambient/song2.mp3" },
-      { title: "Ambient Track 3", artist: "Calm Vibes", src: "/music/ambient/song3.mp3" },
+      { title: "SnowFall", artist: "Oneheart-x-Reidenshi", src: "/music/ambient/oneheart-x-reidenshi-snowfall-128-ytshorts.savetube.me.mp3" },
+      { title: "Watching-The-Stars", artist: "Oneheart", src: "/music/ambient/oneheart-watching-the-stars-128-ytshorts.savetube.me.mp3" },
+      { title: "Rain Inside", artist: "Oneheart-x-Antent", src: "/music/ambient/oneheart-x-antent-rain-inside-128-ytshorts.savetube.me.mp3" },
     ],
   }
 
