@@ -29,7 +29,7 @@ interface Message {
 
 export default function LofiPlayer() {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [currentScene, setCurrentScene] = useState("bedroom")
+  const [currentTheme, setCurrentTheme] = useState("study-lofi")
   const [volume, setVolume] = useState([75])
   const [rainVolume, setRainVolume] = useState([30])
   const [fireVolume, setFireVolume] = useState([20])
@@ -43,9 +43,9 @@ export default function LofiPlayer() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
-  const processedNotificationIds = useRef<Set<string>>(new Set()) // Track processed notifications
+  const processedNotificationIds = useRef<Set<string>>(new Set())
 
-  // Timer states - now using totalSecondsRemaining
+  // Timer states
   const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timerMode, setTimerMode] = useState<"work" | "break">("work")
@@ -60,52 +60,49 @@ export default function LofiPlayer() {
   const timerEndSfxRef = useRef<HTMLAudioElement>(null)
   const breakEndSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  
 
-  const playlist = [
-    { title: "Idea 15", artist: "Gibran Alcocer", src: "/music/Idea 15 - Gibran Alcocer.mp3" },
-    { title: "Idea 20 - Kurate Music", artist: "Gibran Alcocer", src: "/music/Gibran Alcocer - Idea 20 - Kurate Music.mp3" },
-    { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
-  ]
-
-  const scenes = [
+  // Themes configuration
+  const themes = [
     {
-      id: "bedroom",
-      name: "Cozy Bedroom",
-      image: "/images/cozy-bedroom-thumb.png",
+      id: "study-lofi",
+      name: "Study Lofi",
+      image: "/images/lofi-bedroom-scene.png",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
-      id: "vanlife",
-      name: "VAN LIFE",
-      image: "/images/van-life-thumb.png",
+      id: "ambient",
+      name: "Ambient",
+      image: "/images/ambient.png",
       color: "from-blue-500/20 to-cyan-500/20",
-    },
-    {
-      id: "cafe",
-      name: "LOFI CAFÉ",
-      image: "/images/lofi-cafe-thumb.png",
-      color: "from-amber-500/20 to-orange-500/20",
-    },
-    {
-      id: "forest",
-      name: "Forest House",
-      image: "/images/forest-house-thumb.png",
-      color: "from-green-500/20 to-emerald-500/20",
     },
   ]
 
+  // Theme-based playlists
+  const themePlaylists = {
+    "study-lofi": [
+      { title: "Idea 15", artist: "Gibran Alcocer", src: "/music/Idea 15 - Gibran Alcocer.mp3" },
+      { title: "Idea 20 - Kurate Music", artist: "Gibran Alcocer", src: "/music/Gibran Alcocer - Idea 20 - Kurate Music.mp3" },
+      { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
+    ],
+    "ambient": [
+      { title: "Ambient Track 1", artist: "Nature Sounds", src: "/music/ambient/song1.mp3" },
+      { title: "Ambient Track 2", artist: "Peaceful Sounds", src: "/music/ambient/song2.mp3" },
+      { title: "Ambient Track 3", artist: "Calm Vibes", src: "/music/ambient/song3.mp3" },
+    ],
+  }
+
+  const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"])
+
   const currentTrack = {
-    title: playlist[currentTrackIndex].title,
-    artist: playlist[currentTrackIndex].artist,
-    album: "Lofi Dreams Vol. 3",
+    title: playlist[currentTrackIndex]?.title || "No track",
+    artist: playlist[currentTrackIndex]?.artist || "Unknown",
+    album: "Lofi Dreams",
     duration: duration,
     currentTime: currentTime,
   }
 
-  // Function to add notifications (excluding chat messages)
+  // Function to add notifications
   const addNotification = useCallback((message: string, type: NotificationItem["type"] = "info") => {
-    // Don't add chat messages to the notification center
     if (type === "chat") return
     
     const newNotification: NotificationItem = {
@@ -120,65 +117,39 @@ export default function LofiPlayer() {
 
   // Handle new chat messages
   const handleNewChatMessage = useCallback((message: Message) => {
-    console.log("handleNewChatMessage called with:", message.$id, "from:", message.senderName, "senderId:", message.senderId, "currentUserId:", currentUser?.id)
+    if (processedNotificationIds.current.has(message.$id)) return
     
-    // Check if we've already processed this notification
-    if (processedNotificationIds.current.has(message.$id)) {
-      console.log("Notification already processed, skipping:", message.$id)
-      return
-    }
-    
-    // Mark notification as processed
     processedNotificationIds.current.add(message.$id)
     
-    // ONLY show notifications for messages from OTHER users (not the current user's own messages)
-    // This means: if the message sender is NOT the current user, show notification (receiver sees it)
-    // if the message sender IS the current user, don't show notification (sender doesn't see it)
     if (message.senderId !== currentUser?.id) {
-      console.log("Message is from another user, showing notification to receiver:", message.senderName)
-      
-      // Only increment unread count if chat is closed
       if (!isChatOpen) {
-        console.log("Chat is closed, incrementing unread count")
-        setUnreadMessageCount(prev => {
-          console.log("Unread count changing from", prev, "to", prev + 1)
-          return prev + 1
-        })
-      } else {
-        console.log("Chat is open, not incrementing unread count")
+        setUnreadMessageCount(prev => prev + 1)
       }
       
-      // Show toast notification for messages from others (receiver sees this)
       const truncatedMessage = message.messageContent.length > 40 
         ? `${message.messageContent.substring(0, 40)}...` 
         : message.messageContent
       
       const chatNotification: NotificationItem = {
-        id: message.$id, // Use message ID to prevent duplicate toasts
+        id: message.$id,
         message: `💬 ${message.senderName}: ${truncatedMessage}`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         type: "chat",
       }
-      console.log("Setting toast notification for message from:", message.senderName)
       setLatestNotification(chatNotification)
-    } else {
-      console.log("Message is from current user (sender), NO notification will be shown to sender")
     }
   }, [currentUser?.id, isChatOpen])
 
   // Handle chat open/close
   const handleChatToggle = () => {
     if (!isChatOpen) {
-      // Opening chat - clear unread count
-      console.log("Opening chat, clearing unread count")
       setUnreadMessageCount(0)
-      // Clear processed notification IDs when opening chat to allow new notifications
       processedNotificationIds.current.clear()
     }
     setIsChatOpen(!isChatOpen)
   }
 
-  // Effect to clear latestNotification (toast) after a delay
+  // Effect to clear latestNotification
   useEffect(() => {
     if (latestNotification) {
       const timer = setTimeout(() => {
@@ -203,7 +174,7 @@ export default function LofiPlayer() {
 
       const handleEnded = () => {
         handleNextTrack()
-        addNotification(`Track ended: ${playlist[currentTrackIndex].title}`, "music")
+        addNotification(`Track ended: ${playlist[currentTrackIndex]?.title}`, "music")
       }
 
       audio.addEventListener("loadedmetadata", handleLoadedMetadata)
@@ -216,7 +187,7 @@ export default function LofiPlayer() {
         audio.removeEventListener("ended", handleEnded)
       }
     }
-  }, [currentTrackIndex, addNotification])
+  }, [currentTrackIndex, addNotification, playlist])
 
   // Handle play/pause
   const handlePlayPause = async () => {
@@ -226,9 +197,9 @@ export default function LofiPlayer() {
           await audioRef.current.pause()
           addNotification("Music paused", "music")
         } else {
-          audioRef.current.src = playlist[currentTrackIndex].src
+          audioRef.current.src = playlist[currentTrackIndex]?.src || ""
           await audioRef.current.play()
-          addNotification(`Music started: ${playlist[currentTrackIndex].title}`, "music")
+          addNotification(`Music started: ${playlist[currentTrackIndex]?.title}`, "music")
         }
         setIsPlaying(!isPlaying)
       } catch (error) {
@@ -243,12 +214,12 @@ export default function LofiPlayer() {
     const nextIndex = (currentTrackIndex + 1) % playlist.length
     setCurrentTrackIndex(nextIndex)
     if (audioRef.current) {
-      audioRef.current.src = playlist[nextIndex].src
+      audioRef.current.src = playlist[nextIndex]?.src || ""
       audioRef.current.load()
       if (isPlaying) {
         audioRef.current.play()
       }
-      addNotification(`Next track: ${playlist[nextIndex].title}`, "music")
+      addNotification(`Next track: ${playlist[nextIndex]?.title}`, "music")
     }
   }
 
@@ -256,12 +227,12 @@ export default function LofiPlayer() {
     const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length
     setCurrentTrackIndex(prevIndex)
     if (audioRef.current) {
-      audioRef.current.src = playlist[prevIndex].src
+      audioRef.current.src = playlist[prevIndex]?.src || ""
       audioRef.current.load()
       if (isPlaying) {
         audioRef.current.play()
       }
-      addNotification(`Previous track: ${playlist[prevIndex].title}`, "music")
+      addNotification(`Previous track: ${playlist[prevIndex]?.title}`, "music")
     }
   }
 
@@ -393,26 +364,42 @@ export default function LofiPlayer() {
   const displayMinutes = Math.floor(totalSecondsRemaining / 60)
   const displaySeconds = totalSecondsRemaining % 60
 
-  // Load user data from localStorage (Note: In production, avoid localStorage in artifacts)
+  // Load user data from localStorage
   useEffect(() => {
-    // Simulate loading user data - in a real app, this would come from authentication
     const simulatedUser = { id: 'user_' + Math.random().toString(36).substr(2, 9), name: 'You' }
     setCurrentUser(simulatedUser)
   }, [])
 
+  // Function to load theme-based music
+  const loadThemeMusic = (themeId: string) => {
+    setPlaylist(themePlaylists[themeId as keyof typeof themePlaylists] || themePlaylists["study-lofi"])
+    setCurrentTrackIndex(0)
+    if (isPlaying && audioRef.current) {
+      audioRef.current.src = playlist[0]?.src || ""
+      audioRef.current.load()
+      audioRef.current.play().catch(console.error)
+    }
+  }
+
+  // Get current theme background image
+  const getBackgroundImage = () => {
+    const currentThemeData = themes.find(t => t.id === currentTheme)
+    return currentThemeData?.image || "/images/lofi-bedroom-scene.png"
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Audio Elements */}
-      <audio ref={audioRef} src={playlist[currentTrackIndex].src} preload="metadata" loop crossOrigin="anonymous" />
+      <audio ref={audioRef} src={playlist[currentTrackIndex]?.src} preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={rainAudioRef} src="/rain.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={fireAudioRef} src="/fire.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={oceanWavesAudioRef} src="/ocean-waves.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={timerEndSfxRef} src="/timer-end.mp3" preload="auto" crossOrigin="anonymous" />
       <audio ref={breakEndSfxRef} src="/break-end.mp3" preload="auto" crossOrigin="anonymous" />
 
-      {/* Background Image */}
+      {/* Background Image - Dynamic based on theme */}
       <div className="absolute inset-0">
-        <Image src="/images/lofi-bedroom-scene.png" alt="Cozy study room" fill className="object-cover" priority />
+        <Image src={getBackgroundImage()} alt="Theme background" fill className="object-cover" priority />
         <div
           className="absolute inset-0 opacity-30 mix-blend-multiply"
           style={{
@@ -501,14 +488,14 @@ export default function LofiPlayer() {
         }`}
       >
         <div className="ios-glass h-full rounded-2xl p-4 transform transition-all duration-500 flex flex-col">
-          <Tabs defaultValue="scenes" className="h-full flex flex-col">
+          <Tabs defaultValue="themes" className="h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1">
               <TabsTrigger
-                value="scenes"
+                value="themes"
                 className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-lg transition-all"
               >
                 <Palette className="h-4 w-4 mr-1" />
-                Scenes
+                Themes
               </TabsTrigger>
               <TabsTrigger
                 value="sounds"
@@ -519,29 +506,32 @@ export default function LofiPlayer() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="scenes" className="flex-1 mt-4 space-y-3 overflow-y-auto">
-              <h3 className="text-white font-semibold text-lg mb-3">Study Scenes</h3>
-              {scenes.map((scene) => (
+            <TabsContent value="themes" className="flex-1 mt-4 space-y-3 overflow-y-auto">
+              <h3 className="text-white font-semibold text-lg mb-3">Select Theme</h3>
+              {themes.map((theme) => (
                 <div
-                  key={scene.id}
+                  key={theme.id}
                   className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
-                    currentScene === scene.id
+                    currentTheme === theme.id
                       ? "ring-2 ring-white/60 scale-[1.02] shadow-lg"
                       : "hover:scale-[1.01] hover:ring-1 hover:ring-white/40"
                   }`}
-                  onClick={() => setCurrentScene(scene.id)}
+                  onClick={() => {
+                    setCurrentTheme(theme.id)
+                    loadThemeMusic(theme.id)
+                  }}
                 >
                   <div className="ios-glass-card rounded-xl overflow-hidden">
                     <Image
-                      src={scene.image || "/placeholder.svg"}
-                      alt={scene.name}
+                      src={theme.image}
+                      alt={theme.name}
                       width={120}
                       height={80}
                       className="w-full h-20 object-cover"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${scene.color} to-transparent`} />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${theme.color} to-transparent`} />
                     <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <h4 className="text-white font-medium text-sm drop-shadow-lg">{scene.name}</h4>
+                      <h4 className="text-white font-medium text-sm drop-shadow-lg">{theme.name}</h4>
                     </div>
                   </div>
                 </div>
