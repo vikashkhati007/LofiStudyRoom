@@ -211,29 +211,49 @@ export default function LofiPlayer() {
   }
 
   // Handle playlist navigation
-  const handleNextTrack = () => {
+  const handleNextTrack = async () => {
     const nextIndex = (currentTrackIndex + 1) % playlist.length
+    const nextTrack = playlist[nextIndex]
     setCurrentTrackIndex(nextIndex)
-    if (audioRef.current) {
-      audioRef.current.src = playlist[nextIndex]?.src || ""
+    
+    if (audioRef.current && nextTrack?.src) {
+      audioRef.current.src = nextTrack.src
       audioRef.current.load()
+      
       if (isPlaying) {
-        audioRef.current.play()
+        try {
+          // Add a small delay to ensure the audio element is ready
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await audioRef.current.play()
+          addNotification(`Next track: ${nextTrack.title}`, "music")
+        } catch (error) {
+          console.error("Error playing next track:", error)
+          addNotification("Failed to play next track", "info")
+        }
       }
-      addNotification(`Next track: ${playlist[nextIndex]?.title}`, "music")
     }
   }
 
-  const handlePreviousTrack = () => {
+  const handlePreviousTrack = async () => {
     const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length
+    const prevTrack = playlist[prevIndex]
     setCurrentTrackIndex(prevIndex)
-    if (audioRef.current) {
-      audioRef.current.src = playlist[prevIndex]?.src || ""
+    
+    if (audioRef.current && prevTrack?.src) {
+      audioRef.current.src = prevTrack.src
       audioRef.current.load()
+      
       if (isPlaying) {
-        audioRef.current.play()
+        try {
+          // Add a small delay to ensure the audio element is ready
+          await new Promise(resolve => setTimeout(resolve, 100))
+          await audioRef.current.play()
+          addNotification(`Previous track: ${prevTrack.title}`, "music")
+        } catch (error) {
+          console.error("Error playing previous track:", error)
+          addNotification("Failed to play previous track", "info")
+        }
       }
-      addNotification(`Previous track: ${playlist[prevIndex]?.title}`, "music")
     }
   }
 
