@@ -502,93 +502,93 @@ export default function LofiPlayer() {
         onNewMessage={handleNewChatMessage}
       />
 
-      {/* Right Sidebar - Animated iOS Style Glassmorphism */}
+          {/* Compact Settings Panel - Spaced and scrollbar hidden */}
       <div
-        className={`absolute right-4 top-20 bottom-4 w-72 transition-all duration-500 ease-out ${
+        className={`absolute right-4 top-20 bottom-auto max-h-[70vh] w-56 transition-all duration-300 ease-out ${
           isSettingsOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="ios-glass h-full rounded-2xl p-4 transform transition-all duration-500 flex flex-col">
-          <Tabs defaultValue="themes" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1">
+        <div className="ios-glass rounded-xl p-3 transform transition-all duration-300 flex flex-col max-h-full">
+          <Tabs defaultValue="themes" className="flex flex-col max-h-full">
+            <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-0.5 h-full">
               <TabsTrigger
                 value="themes"
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-lg transition-all"
+                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-md transition-all text-xs py-1.5 "
               >
-                <Palette className="h-4 w-4 mr-1" />
+                <Palette className="h-3 w-3 mr-1" />
                 Themes
               </TabsTrigger>
               <TabsTrigger
                 value="sounds"
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-lg transition-all"
+                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-md transition-all text-xs py-1.5"
               >
-                <Music className="h-4 w-4 mr-1" />
+                <Music className="h-3 w-3 mr-1" />
                 Sounds
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="themes" className="flex-1 mt-4 space-y-3 overflow-y-auto">
-              <h3 className="text-white font-semibold text-lg mb-3">Select Theme</h3>
+            <TabsContent value="themes" className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide">
+              <h3 className="text-white font-semibold text-sm mb-2">Themes</h3>
               {themes.map((theme) => (
                 <div
                   key={theme.id}
-                  className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
+                  className={`relative rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${
                     currentTheme === theme.id
-                      ? "ring-2 ring-white/60 scale-[1.02] shadow-lg"
-                      : "hover:scale-[1.01] hover:ring-1 hover:ring-white/40"
+                      ? "ring-1 ring-white/60 scale-[1.01]"
+                      : "hover:scale-[1.01] hover:ring-1 hover:ring-white/30"
                   }`}
                   onClick={() => {
                     setCurrentTheme(theme.id)
                     loadThemeMusic(theme.id)
                   }}
                 >
-                  <div className="ios-glass-card rounded-xl overflow-hidden">
+                  <div className="ios-glass-card rounded-lg overflow-hidden">
                     <Image
                       src={theme.image}
                       alt={theme.name}
-                      width={120}
-                      height={80}
-                      className="w-full h-20 object-cover"
+                      width={100}
+                      height={60}
+                      className="w-full h-16 object-cover"
                     />
                     <div className={`absolute inset-0 bg-gradient-to-t ${theme.color} to-transparent`} />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <h4 className="text-white font-medium text-sm drop-shadow-lg">{theme.name}</h4>
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <h4 className="text-white font-medium text-xs drop-shadow-md">{theme.name}</h4>
                     </div>
                   </div>
                 </div>
               ))}
             </TabsContent>
 
-            <TabsContent value="sounds" className="flex-1 mt-4 space-y-4 overflow-y-auto">
-              <h3 className="text-white font-semibold text-lg mb-3">Ambient Sounds</h3>
-              <div className="space-y-4">
-                <div className="ios-glass-card rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">Rain</span>
-                    <span className="text-white/70 text-sm">{rainVolume[0]}%</span>
+            <TabsContent value="sounds" className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide">
+              <h3 className="text-white font-semibold text-sm mb-2">Ambient</h3>
+              <div className="space-y-2">
+                <div className="ios-glass-card rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white text-xs">Rain</span>
+                    <span className="text-white/70 text-xs">{rainVolume[0]}%</span>
                   </div>
-                  <Slider value={rainVolume} onValueChange={setRainVolume} max={100} step={1} className="ios-slider" />
+                  <Slider value={rainVolume} onValueChange={setRainVolume} max={100} step={1} className="ios-slider h-1" />
                 </div>
 
-                <div className="ios-glass-card rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">Fireplace</span>
-                    <span className="text-white/70 text-sm">{fireVolume[0]}%</span>
+                <div className="ios-glass-card rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white text-xs">Fire</span>
+                    <span className="text-white/70 text-xs">{fireVolume[0]}%</span>
                   </div>
-                  <Slider value={fireVolume} onValueChange={setFireVolume} max={100} step={1} className="ios-slider" />
+                  <Slider value={fireVolume} onValueChange={setFireVolume} max={100} step={1} className="ios-slider h-1" />
                 </div>
 
-                <div className="ios-glass-card rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">Ocean Waves</span>
-                    <span className="text-white/70 text-sm">{oceanWavesVolume[0]}%</span>
+                <div className="ios-glass-card rounded-lg p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white text-xs">Ocean</span>
+                    <span className="text-white/70 text-xs">{oceanWavesVolume[0]}%</span>
                   </div>
                   <Slider
                     value={oceanWavesVolume}
                     onValueChange={setOceanWavesVolume}
                     max={100}
                     step={1}
-                    className="ios-slider"
+                    className="ios-slider h-1"
                   />
                 </div>
               </div>
