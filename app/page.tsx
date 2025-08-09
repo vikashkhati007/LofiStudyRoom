@@ -4,13 +4,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare } from 'lucide-react'
 import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
 import ToastNotification from "./components/toast-notification"
 import WorldChat from "./components/world-chat"
+import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2 } from 'lucide-react'
 
 interface NotificationItem {
   id: string
@@ -564,14 +564,6 @@ export default function LofiPlayer() {
               <div className="space-y-4">
                 <div className="ios-glass-card rounded-xl p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-white font-medium">Music Volume</span>
-                    <span className="text-white/70 text-sm">{volume[0]}%</span>
-                  </div>
-                  <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="ios-slider" />
-                </div>
-
-                <div className="ios-glass-card rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
                     <span className="text-white font-medium">Rain</span>
                     <span className="text-white/70 text-sm">{rainVolume[0]}%</span>
                   </div>
@@ -606,32 +598,95 @@ export default function LofiPlayer() {
       </div>
 
       {/* Music Player Controls - Bottom Center - Ultra Compact */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-        <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-          <div className="flex items-center gap-1">
-            <button
-              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-              onClick={handlePreviousTrack}
-            >
-              <SkipBack className="h-4 w-4" />
-            </button>
+     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+  <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+    <div className="flex items-center gap-1">
+      <button
+        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+        onClick={handlePreviousTrack}
+      >
+        <SkipBack className="h-4 w-4" />
+      </button>
+      <button
+        className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
+        onClick={handlePlayPause}
+      >
+        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+      </button>
+      <button
+        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+        onClick={handleNextTrack}
+      >
+        <SkipForward className="h-4 w-4" />
+      </button>
+    </div>
+  </div>
+</div>
 
-            <button
-              className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
-              onClick={handlePlayPause}
+{/* Separate Volume Control - Positioned beside music controls */}
+<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 translate-x-32">
+  <div className="group relative">
+    <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+      <button className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95">
+        <Volume2 className="h-4 w-4" />
+      </button>
+    </div>
+    
+    {/* Vertical Volume Slider Popup - Extended hover area */}
+    <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+      {/* Invisible bridge to connect button and popup */}
+      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
+      
+      <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
+        <div className="flex flex-col items-center gap-3">
+          <span className="text-white/70 text-xs font-medium">{volume[0]}%</span>
+          <div className="h-24 w-8 flex items-center justify-center relative px-2">
+            {/* Custom Vertical Slider with larger clickable area */}
+            <div 
+              className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
+                const percentage = Math.round((y / rect.height) * 100);
+                setVolume([percentage]);
+              }}
             >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-            </button>
-
-            <button
-              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-              onClick={handleNextTrack}
-            >
-              <SkipForward className="h-4 w-4" />
-            </button>
+              <div 
+                className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
+                style={{ height: `${volume[0]}%` }}
+              ></div>
+              <div 
+                className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
+                style={{ 
+                  bottom: `${volume[0]}%`, 
+                  left: '50%',
+                  transform: 'translateX(-50%) translateY(50%)' 
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const slider = e.currentTarget.parentElement;
+                  const rect = slider.getBoundingClientRect();
+                  const handleMouseMove = (e) => {
+                    const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
+                    const percentage = Math.round((y / rect.height) * 100);
+                    setVolume([percentage]);
+                  };
+                  const handleMouseUp = () => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+              ></div>
+            </div>
           </div>
+          <Volume2 className="h-3 w-3 text-white/50" />
         </div>
       </div>
     </div>
+  </div>
+</div>
+      </div>
   )
 }
