@@ -61,18 +61,18 @@ export default function LofiPlayer() {
   const breakEndSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Themes configuration
+  // Themes configuration - Updated to use videos
   const themes = [
     {
       id: "study-lofi",
       name: "Study Lofi",
-      image: "/images/lofi-bedroom-scene.png",
+      video: "/images/lofigirl.mp4",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
       id: "ambient",
       name: "Ambient",
-      image: "/images/cartoon-landscape-tropical-island.png",
+      video: "/images/lofigirl.mp4",
       color: "from-blue-500/20 to-cyan-500/20",
     },
   ]
@@ -402,10 +402,10 @@ export default function LofiPlayer() {
     }
   }
 
-  // Get current theme background image
-  const getBackgroundImage = () => {
+  // Get current theme background video
+  const getBackgroundVideo = () => {
     const currentThemeData = themes.find(t => t.id === currentTheme)
-    return currentThemeData?.image || "/images/lofi-bedroom-scene.png"
+    return currentThemeData?.video || "/images/lofigirl.mp4"
   }
 
   return (
@@ -418,9 +418,16 @@ export default function LofiPlayer() {
       <audio ref={timerEndSfxRef} src="/timer-end.mp3" preload="auto" crossOrigin="anonymous" />
       <audio ref={breakEndSfxRef} src="/break-end.mp3" preload="auto" crossOrigin="anonymous" />
 
-      {/* Background Image - Dynamic based on theme */}
+      {/* Background Video - Dynamic based on theme */}
       <div className="absolute inset-0">
-        <Image src={getBackgroundImage()} alt="Theme background" fill className="object-cover" priority />
+        <video
+          src={getBackgroundVideo()}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div
           className="absolute inset-0 opacity-30 mix-blend-multiply"
           style={{
@@ -543,11 +550,11 @@ export default function LofiPlayer() {
                   }}
                 >
                   <div className="ios-glass-card rounded-lg overflow-hidden">
-                    <Image
-                      src={theme.image}
-                      alt={theme.name}
-                      width={100}
-                      height={60}
+                    <video
+                      src={theme.video}
+                      muted
+                      loop
+                      playsInline
                       className="w-full h-16 object-cover"
                     />
                     <div className={`absolute inset-0 bg-gradient-to-t ${theme.color} to-transparent`} />
