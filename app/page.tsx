@@ -10,7 +10,8 @@ import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
 import ToastNotification from "./components/toast-notification"
 import WorldChat from "./components/world-chat"
-import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2 } from 'lucide-react'
+// Update the import statement to include VolumeX
+import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2, VolumeX } from 'lucide-react'
 
 interface NotificationItem {
   id: string
@@ -60,6 +61,8 @@ export default function LofiPlayer() {
   const timerEndSfxRef = useRef<HTMLAudioElement>(null)
   const breakEndSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [isMuted, setIsMuted] = useState(false);
+const [previousVolume, setPreviousVolume] = useState(50);
 
   // Themes configuration - Updated to use videos
   const themes = [
@@ -149,6 +152,16 @@ export default function LofiPlayer() {
     }
     setIsChatOpen(!isChatOpen)
   }
+
+  useEffect(() => {
+  if (audioRef.current) {
+    if (isMuted) {
+      audioRef.current.volume = 0;
+    } else {
+      audioRef.current.volume = volume[0] / 100;
+    }
+  }
+}, [volume, isMuted]);
 
   // Effect to clear latestNotification
   useEffect(() => {
@@ -408,6 +421,19 @@ export default function LofiPlayer() {
     return currentThemeData?.video || "/images/lofigirl.mp4"
   }
 
+  const toggleMute = () => {
+  if (isMuted) {
+    // Unmute - restore previous volume
+    setVolume([previousVolume]);
+    setIsMuted(false);
+  } else {
+    // Mute - save current volume and set to 0
+    setPreviousVolume(volume[0]);
+    setVolume([0]);
+    setIsMuted(true);
+  }
+};
+
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Audio Elements */}
@@ -634,8 +660,15 @@ export default function LofiPlayer() {
 <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 translate-x-32">
   <div className="group relative">
     <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-      <button className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95">
-        <Volume2 className="h-4 w-4" />
+      <button 
+        className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+        onClick={toggleMute}
+      >
+        {isMuted || volume[0] === 0 ? (
+          <VolumeX className="h-4 w-4" />
+        ) : (
+          <Volume2 className="h-4 w-4" />
+        )}
       </button>
     </div>
     
@@ -646,7 +679,9 @@ export default function LofiPlayer() {
       
       <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
         <div className="flex flex-col items-center gap-3">
-          <span className="text-white/70 text-xs font-medium">{volume[0]}%</span>
+          <span className="text-white/70 text-xs font-medium">
+            {isMuted ? "Muted" : `${volume[0]}%`}
+          </span>
           <div className="h-24 w-8 flex items-center justify-center relative px-2">
             {/* Custom Vertical Slider with larger clickable area */}
             <div 
@@ -656,16 +691,17 @@ export default function LofiPlayer() {
                 const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
                 const percentage = Math.round((y / rect.height) * 100);
                 setVolume([percentage]);
+                setIsMuted(false); // Unmute when manually adjusting volume
               }}
             >
               <div 
                 className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
-                style={{ height: `${volume[0]}%` }}
+                style={{ height: `${isMuted ? 0 : volume[0]}%` }}
               ></div>
               <div 
                 className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
                 style={{ 
-                  bottom: `${volume[0]}%`, 
+                  bottom: `${isMuted ? 0 : volume[0]}%`, 
                   left: '50%',
                   transform: 'translateX(-50%) translateY(50%)' 
                 }}
@@ -677,6 +713,7 @@ export default function LofiPlayer() {
                     const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
                     const percentage = Math.round((y / rect.height) * 100);
                     setVolume([percentage]);
+                    setIsMuted(false); // Unmute when manually adjusting
                   };
                   const handleMouseUp = () => {
                     document.removeEventListener('mousemove', handleMouseMove);
@@ -688,7 +725,11 @@ export default function LofiPlayer() {
               ></div>
             </div>
           </div>
-          <Volume2 className="h-3 w-3 text-white/50" />
+          {isMuted || volume[0] === 0 ? (
+            <VolumeX className="h-3 w-3 text-white/50" />
+          ) : (
+            <Volume2 className="h-3 w-3 text-white/50" />
+          )}
         </div>
       </div>
     </div>
