@@ -473,9 +473,9 @@ export default function LofiPlayer() {
       <audio ref={rainAudioRef} src="/rain.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={fireAudioRef} src="/fire.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={oceanWavesAudioRef} src="/ocean-waves.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={breakVoiceRef} src="/time/break/voice.mp3" preload="auto" crossOrigin="anonymous" />
-      <audio ref={fullVoiceRef} src="/time/full/voice.mp3" preload="auto" crossOrigin="anonymous" />
-      <audio ref={stopSfxRef} src="/stop.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={breakVoiceRef} src="music/time/break/voice.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={fullVoiceRef} src="music/time/full/voice.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={stopSfxRef} src="music/time/stop.mp3" preload="auto" crossOrigin="anonymous" />
 
       {/* Background Video - Dynamic based on theme */}
       <div className="absolute inset-0">
