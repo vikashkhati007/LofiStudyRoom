@@ -10,7 +10,6 @@ import TimerDynamicIsland from "./components/timer-dynamic-island"
 import NotificationCenter from "./components/notification-center"
 import ToastNotification from "./components/toast-notification"
 import WorldChat from "./components/world-chat"
-// Update the import statement to include VolumeX
 import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2, VolumeX } from 'lucide-react'
 
 interface NotificationItem {
@@ -58,13 +57,18 @@ export default function LofiPlayer() {
   const rainAudioRef = useRef<HTMLAudioElement>(null)
   const fireAudioRef = useRef<HTMLAudioElement>(null)
   const oceanWavesAudioRef = useRef<HTMLAudioElement>(null)
-  const timerEndSfxRef = useRef<HTMLAudioElement>(null)
-  const breakEndSfxRef = useRef<HTMLAudioElement>(null)
+  const breakVoiceRef = useRef<HTMLAudioElement>(null)
+  const fullVoiceRef = useRef<HTMLAudioElement>(null)
+  const stopSfxRef = useRef<HTMLAudioElement>(null)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [isMuted, setIsMuted] = useState(false);
-const [previousVolume, setPreviousVolume] = useState(50);
+  const [previousVolume, setPreviousVolume] = useState(50);
 
-  // Themes configuration - Updated to use videos
+  // Voice countdown tracking
+  const [breakVoicePlayed, setBreakVoicePlayed] = useState(false)
+  const [fullVoicePlayed, setFullVoicePlayed] = useState(false)
+
+  // Themes configuration
   const themes = [
     {
       id: "study-lofi",
@@ -154,14 +158,14 @@ const [previousVolume, setPreviousVolume] = useState(50);
   }
 
   useEffect(() => {
-  if (audioRef.current) {
-    if (isMuted) {
-      audioRef.current.volume = 0;
-    } else {
-      audioRef.current.volume = volume[0] / 100;
+    if (audioRef.current) {
+      if (isMuted) {
+        audioRef.current.volume = 0;
+      } else {
+        audioRef.current.volume = volume[0] / 100;
+      }
     }
-  }
-}, [volume, isMuted]);
+  }, [volume, isMuted]);
 
   // Effect to clear latestNotification
   useEffect(() => {
@@ -235,7 +239,6 @@ const [previousVolume, setPreviousVolume] = useState(50);
       
       if (isPlaying) {
         try {
-          // Add a small delay to ensure the audio element is ready
           await new Promise(resolve => setTimeout(resolve, 100))
           await audioRef.current.play()
           addNotification(`Next track: ${nextTrack.title}`, "music")
@@ -258,7 +261,6 @@ const [previousVolume, setPreviousVolume] = useState(50);
       
       if (isPlaying) {
         try {
-          // Add a small delay to ensure the audio element is ready
           await new Promise(resolve => setTimeout(resolve, 100))
           await audioRef.current.play()
           addNotification(`Previous track: ${prevTrack.title}`, "music")
@@ -310,6 +312,8 @@ const [previousVolume, setPreviousVolume] = useState(50);
         timerIntervalRef.current = null
       }
       setIsTimerRunning(false)
+      setBreakVoicePlayed(false)
+      setFullVoicePlayed(false)
       addNotification("Timer paused", "timer")
     } else {
       if (Notification.permission !== "granted") {
@@ -321,18 +325,47 @@ const [previousVolume, setPreviousVolume] = useState(50);
       }
 
       setIsTimerRunning(true)
+      setBreakVoicePlayed(false)
+      setFullVoicePlayed(false)
       addNotification(`Timer started: ${timerMode} session`, "timer")
+      
       timerIntervalRef.current = setInterval(() => {
         setTotalSecondsRemaining((prevTotalSeconds) => {
+          // Check for voice countdown triggers
+          if (timerMode === "break" && prevTotalSeconds === 10 && !breakVoicePlayed) {
+            if (breakVoiceRef.current) {
+              breakVoiceRef.current.play()
+              setBreakVoicePlayed(true)
+              
+              // Set up stop sound after voice
+              breakVoiceRef.current.onended = () => {
+                if (stopSfxRef.current) stopSfxRef.current.play()
+              }
+            }
+          }
+          
+          if (timerMode === "work" && prevTotalSeconds === 11 && !fullVoicePlayed) {
+            if (fullVoiceRef.current) {
+              fullVoiceRef.current.play()
+              setFullVoicePlayed(true)
+              
+              // Set up stop sound after voice
+              fullVoiceRef.current.onended = () => {
+                if (stopSfxRef.current) stopSfxRef.current.play()
+              }
+            }
+          }
+
           if (prevTotalSeconds <= 0) {
             if (timerIntervalRef.current) {
               clearInterval(timerIntervalRef.current)
               timerIntervalRef.current = null
             }
             setIsTimerRunning(false)
+            setBreakVoicePlayed(false)
+            setFullVoicePlayed(false)
 
             if (timerMode === "work") {
-              if (timerEndSfxRef.current) timerEndSfxRef.current.play()
               if (Notification.permission === "granted") {
                 new Notification("Work session finished!", {
                   body: "Time for a break!",
@@ -343,7 +376,6 @@ const [previousVolume, setPreviousVolume] = useState(50);
               setTimerMode("break")
               return breakDuration[0] * 60
             } else {
-              if (breakEndSfxRef.current) breakEndSfxRef.current.play()
               if (Notification.permission === "granted") {
                 new Notification("Break session finished!", {
                   body: "Time for a new work session!",
@@ -370,6 +402,8 @@ const [previousVolume, setPreviousVolume] = useState(50);
     setIsTimerRunning(false)
     setTimerMode("work")
     setTotalSecondsRemaining(workDuration[0] * 60)
+    setBreakVoicePlayed(false)
+    setFullVoicePlayed(false)
     addNotification("Timer reset", "timer")
   }
 
@@ -422,17 +456,15 @@ const [previousVolume, setPreviousVolume] = useState(50);
   }
 
   const toggleMute = () => {
-  if (isMuted) {
-    // Unmute - restore previous volume
-    setVolume([previousVolume]);
-    setIsMuted(false);
-  } else {
-    // Mute - save current volume and set to 0
-    setPreviousVolume(volume[0]);
-    setVolume([0]);
-    setIsMuted(true);
-  }
-};
+    if (isMuted) {
+      setVolume([previousVolume]);
+      setIsMuted(false);
+    } else {
+      setPreviousVolume(volume[0]);
+      setVolume([0]);
+      setIsMuted(true);
+    }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -441,8 +473,9 @@ const [previousVolume, setPreviousVolume] = useState(50);
       <audio ref={rainAudioRef} src="/rain.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={fireAudioRef} src="/fire.mp3" preload="metadata" loop crossOrigin="anonymous" />
       <audio ref={oceanWavesAudioRef} src="/ocean-waves.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={timerEndSfxRef} src="/timer-end.mp3" preload="auto" crossOrigin="anonymous" />
-      <audio ref={breakEndSfxRef} src="/break-end.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={breakVoiceRef} src="/time/break/voice.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={fullVoiceRef} src="/time/full/voice.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio ref={stopSfxRef} src="/stop.mp3" preload="auto" crossOrigin="anonymous" />
 
       {/* Background Video - Dynamic based on theme */}
       <div className="absolute inset-0">
@@ -532,12 +565,13 @@ const [previousVolume, setPreviousVolume] = useState(50);
       <WorldChat 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 
-        onNewMessage={handleNewChatMessage}
+        onNewMessage={handleNewChatMessage} 
+        currentUser={currentUser} 
       />
 
-          {/* Compact Settings Panel - Spaced and scrollbar hidden */}
+      {/* Settings Panel */}
       <div
-        className={`absolute right-4 top-20 bottom-auto max-h-[70vh] w-56 transition-all duration-300 ease-out ${
+        className={`fixed right-4 top-20 z-30 w-72 transition-all duration-300 ease-in-out ${
           isSettingsOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
         }`}
       >
@@ -546,7 +580,7 @@ const [previousVolume, setPreviousVolume] = useState(50);
             <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-0.5 h-full">
               <TabsTrigger
                 value="themes"
-                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-md transition-all text-xs py-1.5 "
+                className="data-[state=active]:bg-white/20 data-[state=active]:text-white text-white/70 rounded-md transition-all text-xs py-1.5"
               >
                 <Palette className="h-3 w-3 mr-1" />
                 Themes
@@ -631,110 +665,108 @@ const [previousVolume, setPreviousVolume] = useState(50);
       </div>
 
       {/* Music Player Controls - Bottom Center - Ultra Compact */}
-     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-  <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-    <div className="flex items-center gap-1">
-      <button
-        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={handlePreviousTrack}
-      >
-        <SkipBack className="h-4 w-4" />
-      </button>
-      <button
-        className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
-        onClick={handlePlayPause}
-      >
-        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-      </button>
-      <button
-        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={handleNextTrack}
-      >
-        <SkipForward className="h-4 w-4" />
-      </button>
-    </div>
-  </div>
-</div>
-
-{/* Separate Volume Control - Positioned beside music controls */}
-<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 translate-x-32">
-  <div className="group relative">
-    <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-      <button 
-        className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={toggleMute}
-      >
-        {isMuted || volume[0] === 0 ? (
-          <VolumeX className="h-4 w-4" />
-        ) : (
-          <Volume2 className="h-4 w-4" />
-        )}
-      </button>
-    </div>
-    
-    {/* Vertical Volume Slider Popup - Extended hover area */}
-    <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-      {/* Invisible bridge to connect button and popup */}
-      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
-      
-      <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
-        <div className="flex flex-col items-center gap-3">
-          <span className="text-white/70 text-xs font-medium">
-            {isMuted ? "Muted" : `${volume[0]}%`}
-          </span>
-          <div className="h-24 w-8 flex items-center justify-center relative px-2">
-            {/* Custom Vertical Slider with larger clickable area */}
-            <div 
-              className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
-                const percentage = Math.round((y / rect.height) * 100);
-                setVolume([percentage]);
-                setIsMuted(false); // Unmute when manually adjusting volume
-              }}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+        <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+          <div className="flex items-center gap-1">
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={handlePreviousTrack}
             >
-              <div 
-                className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
-                style={{ height: `${isMuted ? 0 : volume[0]}%` }}
-              ></div>
-              <div 
-                className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
-                style={{ 
-                  bottom: `${isMuted ? 0 : volume[0]}%`, 
-                  left: '50%',
-                  transform: 'translateX(-50%) translateY(50%)' 
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  const slider = e.currentTarget.parentElement;
-                  const rect = slider.getBoundingClientRect();
-                  const handleMouseMove = (e) => {
-                    const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
-                    const percentage = Math.round((y / rect.height) * 100);
-                    setVolume([percentage]);
-                    setIsMuted(false); // Unmute when manually adjusting
-                  };
-                  const handleMouseUp = () => {
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                  };
-                  document.addEventListener('mousemove', handleMouseMove);
-                  document.addEventListener('mouseup', handleMouseUp);
-                }}
-              ></div>
+              <SkipBack className="h-4 w-4" />
+            </button>
+            <button
+              className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
+              onClick={handlePlayPause}
+            >
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+            </button>
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={handleNextTrack}
+            >
+              <SkipForward className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Separate Volume Control - Positioned beside music controls */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 translate-x-32">
+        <div className="group relative">
+          <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+            <button 
+              className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={toggleMute}
+            >
+              {isMuted || volume[0] === 0 ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+          
+          {/* Vertical Volume Slider Popup - Extended hover area */}
+          <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
+            
+            <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-white/70 text-xs font-medium">
+                  {isMuted ? "Muted" : `${volume[0]}%`}
+                </span>
+                <div className="h-24 w-8 flex items-center justify-center relative px-2">
+                  <div 
+                    className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
+                      const percentage = Math.round((y / rect.height) * 100);
+                      setVolume([percentage]);
+                      setIsMuted(false);
+                    }}
+                  >
+                    <div 
+                      className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
+                      style={{ height: `${isMuted ? 0 : volume[0]}%` }}
+                    ></div>
+                    <div 
+                      className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
+                      style={{ 
+                        bottom: `${isMuted ? 0 : volume[0]}%`, 
+                        left: '50%',
+                        transform: 'translateX(-50%) translateY(50%)' 
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const slider = e.currentTarget.parentElement;
+                        const rect = slider.getBoundingClientRect();
+                        const handleMouseMove = (e) => {
+                          const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
+                          const percentage = Math.round((y / rect.height) * 100);
+                          setVolume([percentage]);
+                          setIsMuted(false);
+                        };
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                        };
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                {isMuted || volume[0] === 0 ? (
+                  <VolumeX className="h-3 w-3 text-white/50" />
+                ) : (
+                  <Volume2 className="h-3 w-3 text-white/50" />
+                )}
+              </div>
             </div>
           </div>
-          {isMuted || volume[0] === 0 ? (
-            <VolumeX className="h-3 w-3 text-white/50" />
-          ) : (
-            <Volume2 className="h-3 w-3 text-white/50" />
-          )}
         </div>
       </div>
     </div>
-  </div>
-</div>
-      </div>
   )
 }
