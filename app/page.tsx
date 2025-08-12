@@ -4,10 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from "next/image"
 import DynamicIsland from "./components/dynamic-island"
 import TimerDynamicIsland from "./components/timer-dynamic-island"
-import NotificationCenter from "./components/notification-center"
 import ToastNotification from "./components/toast-notification"
 import WorldChat from "./components/world-chat"
 import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2, VolumeX } from 'lucide-react'
@@ -521,10 +519,6 @@ export default function LofiPlayer() {
         onWorkDurationChange={(val) => setWorkDuration(val)}
         onBreakDurationChange={(val) => setBreakDuration(val)}
       />
-
-      {/* Notification Center (Top Left) */}
-      {/* @ts-ignore */}
-      <NotificationCenter notifications={notifications} onClearNotifications={handleClearNotifications} />
 
       {/* Settings Toggle Button */}
       <div className="absolute right-4 top-4 z-20">
