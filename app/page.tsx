@@ -73,13 +73,13 @@ export default function LofiPlayer() {
     {
       id: "study-lofi",
       name: "Study Lofi",
-      video: "/images/lofigirl.mp4",
+      video: "/videos/day.mp4",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
       id: "ambient",
       name: "Ambient",
-      video: "/images/lofigirl.mp4",
+      video: "/videos/lofigirl.mp4",
       color: "from-blue-500/20 to-cyan-500/20",
     },
   ]
@@ -477,7 +477,7 @@ export default function LofiPlayer() {
   // Get current theme background video
   const getBackgroundVideo = () => {
     const currentThemeData = themes.find(t => t.id === currentTheme)
-    return currentThemeData?.video || "/images/lofigirl.mp4"
+    return currentThemeData?.video || "/videos/lofigirl.mp4"
   }
 
   const toggleMute = () => {
