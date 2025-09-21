@@ -9,6 +9,7 @@ import TimerDynamicIsland from "./components/timer-dynamic-island"
 import ToastNotification from "./components/toast-notification"
 import WorldChat from "./components/world-chat"
 import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2, VolumeX } from 'lucide-react'
+import { motion, AnimatePresence } from "framer-motion"
 
 interface NotificationItem {
   id: string
@@ -38,7 +39,7 @@ export default function LofiPlayer() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null)
-  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(true)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const processedNotificationIds = useRef<Set<string>>(new Set())
@@ -49,6 +50,7 @@ export default function LofiPlayer() {
   const [timerMode, setTimerMode] = useState<"work" | "break">("work")
   const [workDuration, setWorkDuration] = useState([25])
   const [breakDuration, setBreakDuration] = useState([5])
+  
 
   // Audio refs
   const audioRef = useRef<HTMLAudioElement>(null)
@@ -582,11 +584,14 @@ export default function LofiPlayer() {
         </div>
       )}
 
+       
+
       {/* World Chat Component */}
       <WorldChat 
         isOpen={isChatOpen} 
         onClose={() => setIsChatOpen(false)} 
         onNewMessage={handleNewChatMessage} 
+        // @ts-ignore
         currentUser={currentUser} 
       />
 
@@ -787,8 +792,8 @@ export default function LofiPlayer() {
                 onMouseDown={(e) => {
                   e.preventDefault();
                   const slider = e.currentTarget.parentElement;
-                  const rect = slider.getBoundingClientRect();
-                  const handleMouseMove = (e) => {
+                  const rect = slider!.getBoundingClientRect();
+                  const handleMouseMove = (e: MouseEvent) => {
                     const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
                     const percentage = Math.round((y / rect.height) * 100);
                     setVolume([percentage]);
