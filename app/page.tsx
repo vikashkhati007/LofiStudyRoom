@@ -1,107 +1,146 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import DynamicIsland from "./components/dynamic-island"
-import TimerDynamicIsland from "./components/timer-dynamic-island"
-import ToastNotification from "./components/toast-notification"
-import WorldChat from "./components/world-chat"
-import { Play, Pause, SkipBack, SkipForward, Palette, Music, MessageSquare, Volume2, VolumeX } from 'lucide-react'
-import { motion, AnimatePresence } from "framer-motion"
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DynamicIsland from "./components/dynamic-island";
+import TimerDynamicIsland from "./components/timer-dynamic-island";
+import ToastNotification from "./components/toast-notification";
+import WorldChat from "./components/world-chat";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Palette,
+  Music,
+  MessageSquare,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NotificationItem {
-  id: string
-  message: string
-  timestamp: string
-  type?: "music" | "timer" | "info" | "chat"
+  id: string;
+  message: string;
+  timestamp: string;
+  type?: "music" | "timer" | "info" | "chat";
 }
 
 interface Message {
-  $id: string
-  senderName: string
-  messageContent: string
-  timestamp: string
-  senderId: string
+  $id: string;
+  senderName: string;
+  messageContent: string;
+  timestamp: string;
+  senderId: string;
 }
 
 export default function LofiPlayer() {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTheme, setCurrentTheme] = useState("study-lofi")
-  const [volume, setVolume] = useState([75])
-  const [rainVolume, setRainVolume] = useState([30])
-  const [fireVolume, setFireVolume] = useState([20])
-  const [oceanWavesVolume, setOceanWavesVolume] = useState([0])
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
-  const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null)
-  const [isChatOpen, setIsChatOpen] = useState(true)
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null)
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
-  const processedNotificationIds = useRef<Set<string>>(new Set())
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState("study-lofi");
+  const [volume, setVolume] = useState([75]);
+  const [rainVolume, setRainVolume] = useState([30]);
+  const [fireVolume, setFireVolume] = useState([20]);
+  const [oceanWavesVolume, setOceanWavesVolume] = useState([0]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [latestNotification, setLatestNotification] =
+    useState<NotificationItem | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(true);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const processedNotificationIds = useRef<Set<string>>(new Set());
 
   // Timer states
-  const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
-  const [timerMode, setTimerMode] = useState<"work" | "break">("work")
-  const [workDuration, setWorkDuration] = useState([25])
-  const [breakDuration, setBreakDuration] = useState([5])
-  
+  const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timerMode, setTimerMode] = useState<"work" | "break">("work");
+  const [workDuration, setWorkDuration] = useState([25]);
+  const [breakDuration, setBreakDuration] = useState([5]);
 
   // Audio refs
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const rainAudioRef = useRef<HTMLAudioElement>(null)
-  const fireAudioRef = useRef<HTMLAudioElement>(null)
-  const oceanWavesAudioRef = useRef<HTMLAudioElement>(null)
-  const breakVoiceRef = useRef<HTMLAudioElement>(null)
-  const fullVoiceRef = useRef<HTMLAudioElement>(null)
-  const stopSfxRef = useRef<HTMLAudioElement>(null)
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const rainAudioRef = useRef<HTMLAudioElement>(null);
+  const fireAudioRef = useRef<HTMLAudioElement>(null);
+  const oceanWavesAudioRef = useRef<HTMLAudioElement>(null);
+  const breakVoiceRef = useRef<HTMLAudioElement>(null);
+  const fullVoiceRef = useRef<HTMLAudioElement>(null);
+  const stopSfxRef = useRef<HTMLAudioElement>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(50);
 
   // Voice countdown tracking
-  const [breakVoicePlayed, setBreakVoicePlayed] = useState(false)
-  const [fullVoicePlayed, setFullVoicePlayed] = useState(false)
+  const [breakVoicePlayed, setBreakVoicePlayed] = useState(false);
+  const [fullVoicePlayed, setFullVoicePlayed] = useState(false);
 
-  const [playbackSpeed, setPlaybackSpeed] = useState<'slow' | 'normal' | 'fast'>('normal')
+  const [playbackSpeed, setPlaybackSpeed] = useState<
+    "slow" | "normal" | "fast"
+  >("normal");
 
   // Themes configuration
   const themes = [
     {
       id: "study-lofi",
       name: "Study Lofi",
-      video: "/videos/day.mp4",
+      video: "/videos/night.mp4",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
       id: "ambient",
       name: "Ambient",
-      video: "/videos/lofigirl.mp4",
+      video: "/videos/night.mp4",
       color: "from-blue-500/20 to-cyan-500/20",
     },
-  ]
+  ];
 
   // Theme-based playlists
   const themePlaylists = {
     "study-lofi": [
-      { title: "Idea 15", artist: "Gibran Alcocer", src: "/music/Idea 15 - Gibran Alcocer.mp3" },
-      { title: "Idea 20 - Kurate Music", artist: "Gibran Alcocer", src: "/music/Gibran Alcocer - Idea 20 - Kurate Music.mp3" },
+      {
+        title: "Idea 15",
+        artist: "Gibran Alcocer",
+        src: "/music/Idea 15 - Gibran Alcocer.mp3",
+      },
+      {
+        title: "Idea 20 - Kurate Music",
+        artist: "Gibran Alcocer",
+        src: "/music/Gibran Alcocer - Idea 20 - Kurate Music.mp3",
+      },
       { title: "Rainy Day Vibes", artist: "Ambient Sounds", src: "/lofi.mp3" },
     ],
-    "ambient": [
-      { title: "SnowFall", artist: "Oneheart-x-Reidenshi", src: "/music/ambient/oneheart-x-reidenshi-snowfall-128-ytshorts.savetube.me.mp3" },
-      { title: "Watching-The-Stars", artist: "Oneheart", src: "/music/ambient/oneheart-watching-the-stars-128-ytshorts.savetube.me.mp3" },
-      { title: "Rain Inside", artist: "Oneheart-x-Antent", src: "/music/ambient/oneheart-x-antent-rain-inside-128-ytshorts.savetube.me.mp3" },
-      { title: "Rescue", artist: "Oneheart-x-Ashess", src: "/music/ambient/oneheart-x-ashess-rescue-128-ytshorts.savetube.me.me.mp3" },
+    ambient: [
+      {
+        title: "SnowFall",
+        artist: "Oneheart-x-Reidenshi",
+        src: "/music/ambient/oneheart-x-reidenshi-snowfall-128-ytshorts.savetube.me.mp3",
+      },
+      {
+        title: "Watching-The-Stars",
+        artist: "Oneheart",
+        src: "/music/ambient/oneheart-watching-the-stars-128-ytshorts.savetube.me.mp3",
+      },
+      {
+        title: "Rain Inside",
+        artist: "Oneheart-x-Antent",
+        src: "/music/ambient/oneheart-x-antent-rain-inside-128-ytshorts.savetube.me.mp3",
+      },
+      {
+        title: "Rescue",
+        artist: "Oneheart-x-Ashess",
+        src: "/music/ambient/oneheart-x-ashess-rescue-128-ytshorts.savetube.me.me.mp3",
+      },
     ],
-  }
+  };
 
-  const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"])
+  const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"]);
 
   const currentTrack = {
     title: playlist[currentTrackIndex]?.title || "No track",
@@ -109,80 +148,93 @@ export default function LofiPlayer() {
     album: "Lofi Dreams",
     duration: duration,
     currentTime: currentTime,
-  }
+  };
 
   // Function to add notifications
-  const addNotification = useCallback((message: string, type: NotificationItem["type"] = "info") => {
-    if (type === "chat") return
-    
-    const newNotification: NotificationItem = {
-      id: Date.now().toString(),
-      message,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      type,
-    }
-    setNotifications((prev) => [newNotification, ...prev])
-    setLatestNotification(newNotification)
-  }, [])
+  const addNotification = useCallback(
+    (message: string, type: NotificationItem["type"] = "info") => {
+      if (type === "chat") return;
 
- const togglePlaybackSpeed = () => {
-  setPlaybackSpeed(prev => {
-    let nextSpeed: 'slow' | 'normal' | 'fast'
-    let nextRate: number
-    
-    if (prev === 'slow') {
-      nextSpeed = 'normal'
-      nextRate = 1.0
-    } else if (prev === 'normal') {
-      nextSpeed = 'fast'
-      nextRate = 1.25
-    } else {
-      nextSpeed = 'slow'
-      nextRate = 0.75
-    }
-    
-    if (audioRef.current) {
-      audioRef.current.playbackRate = nextRate
-      addNotification(`Playback speed: ${nextSpeed} (${nextRate}x)`, "music")
-    }
-    
-    return nextSpeed
-  })
-}
+      const newNotification: NotificationItem = {
+        id: Date.now().toString(),
+        message,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        type,
+      };
+      setNotifications((prev) => [newNotification, ...prev]);
+      setLatestNotification(newNotification);
+    },
+    []
+  );
+
+  const togglePlaybackSpeed = () => {
+    setPlaybackSpeed((prev) => {
+      let nextSpeed: "slow" | "normal" | "fast";
+      let nextRate: number;
+
+      if (prev === "slow") {
+        nextSpeed = "normal";
+        nextRate = 1.0;
+      } else if (prev === "normal") {
+        nextSpeed = "fast";
+        nextRate = 1.25;
+      } else {
+        nextSpeed = "slow";
+        nextRate = 0.75;
+      }
+
+      if (audioRef.current) {
+        audioRef.current.playbackRate = nextRate;
+        addNotification(`Playback speed: ${nextSpeed} (${nextRate}x)`, "music");
+      }
+
+      return nextSpeed;
+    });
+  };
 
   // Handle new chat messages
-  const handleNewChatMessage = useCallback((message: Message) => {
-    if (processedNotificationIds.current.has(message.$id)) return
-    
-    processedNotificationIds.current.add(message.$id)
-    
-    if (message.senderId !== currentUser?.id) {
-      if (!isChatOpen) {
-        setUnreadMessageCount(prev => prev + 1)
+  const handleNewChatMessage = useCallback(
+    (message: Message) => {
+      if (processedNotificationIds.current.has(message.$id)) return;
+
+      processedNotificationIds.current.add(message.$id);
+
+      if (message.senderId !== currentUser?.id) {
+        if (!isChatOpen) {
+          setUnreadMessageCount((prev) => prev + 1);
+        }
+
+        const truncatedMessage =
+          message.messageContent.length > 40
+            ? `${message.messageContent.substring(0, 40)}...`
+            : message.messageContent;
+
+        const chatNotification: NotificationItem = {
+          id: message.$id,
+          message: `💬 ${message.senderName}: ${truncatedMessage}`,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: "chat",
+        };
+        setLatestNotification(chatNotification);
       }
-      
-      const truncatedMessage = message.messageContent.length > 40 
-        ? `${message.messageContent.substring(0, 40)}...` 
-        : message.messageContent
-      
-      const chatNotification: NotificationItem = {
-        id: message.$id,
-        message: `💬 ${message.senderName}: ${truncatedMessage}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        type: "chat",
-      }
-      setLatestNotification(chatNotification)
-    }
-  }, [currentUser?.id, isChatOpen])
+    },
+    [currentUser?.id, isChatOpen]
+  );
 
   // Handle chat open/close
   const handleChatToggle = () => {
     if (!isChatOpen) {
-      setUnreadMessageCount(0)
-      processedNotificationIds.current.clear()
+      setUnreadMessageCount(0);
+      processedNotificationIds.current.clear();
     }
-    setIsChatOpen(!isChatOpen)
-  }
+    setIsChatOpen(!isChatOpen);
+  };
 
   useEffect(() => {
     if (audioRef.current) {
@@ -198,289 +250,331 @@ export default function LofiPlayer() {
   useEffect(() => {
     if (latestNotification) {
       const timer = setTimeout(() => {
-        setLatestNotification(null)
-      }, 4000)
-      return () => clearTimeout(timer)
+        setLatestNotification(null);
+      }, 4000);
+      return () => clearTimeout(timer);
     }
-  }, [latestNotification])
+  }, [latestNotification]);
 
   // Initialize audio and handle metadata/time updates
   useEffect(() => {
     if (audioRef.current) {
-      const audio = audioRef.current
+      const audio = audioRef.current;
 
       const handleLoadedMetadata = () => {
-        setDuration(Math.floor(audio.duration))
-      }
+        setDuration(Math.floor(audio.duration));
+      };
 
       const handleTimeUpdate = () => {
-        setCurrentTime(Math.floor(audio.currentTime))
-      }
+        setCurrentTime(Math.floor(audio.currentTime));
+      };
 
       const handleEnded = () => {
-        handleNextTrack()
-        addNotification(`Track ended: ${playlist[currentTrackIndex]?.title}`, "music")
-      }
+        handleNextTrack();
+        addNotification(
+          `Track ended: ${playlist[currentTrackIndex]?.title}`,
+          "music"
+        );
+      };
 
-      audio.addEventListener("loadedmetadata", handleLoadedMetadata)
-      audio.addEventListener("timeupdate", handleTimeUpdate)
-      audio.addEventListener("ended", handleEnded)
+      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.addEventListener("timeupdate", handleTimeUpdate);
+      audio.addEventListener("ended", handleEnded);
 
       return () => {
-        audio.removeEventListener("loadedmetadata", handleLoadedMetadata)
-        audio.removeEventListener("timeupdate", handleTimeUpdate)
-        audio.removeEventListener("ended", handleEnded)
-      }
+        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
+        audio.removeEventListener("ended", handleEnded);
+      };
     }
-  }, [currentTrackIndex, addNotification, playlist])
+  }, [currentTrackIndex, addNotification, playlist]);
 
   // Handle play/pause
   const handlePlayPause = async () => {
     if (audioRef.current) {
       try {
         if (isPlaying) {
-          await audioRef.current.pause()
-          addNotification("Music paused", "music")
+          await audioRef.current.pause();
+          addNotification("Music paused", "music");
         } else {
-          audioRef.current.src = playlist[currentTrackIndex]?.src || ""
-          await audioRef.current.play()
-          addNotification(`Music started: ${playlist[currentTrackIndex]?.title}`, "music")
+          audioRef.current.src = playlist[currentTrackIndex]?.src || "";
+          await audioRef.current.play();
+          addNotification(
+            `Music started: ${playlist[currentTrackIndex]?.title}`,
+            "music"
+          );
         }
-        setIsPlaying(!isPlaying)
+        setIsPlaying(!isPlaying);
       } catch (error) {
-        console.error("Error playing audio:", error)
-        addNotification("Failed to play music", "info")
+        console.error("Error playing audio:", error);
+        addNotification("Failed to play music", "info");
       }
     }
-  }
+  };
 
   // Handle playlist navigation
   const handleNextTrack = async () => {
-    const nextIndex = (currentTrackIndex + 1) % playlist.length
-    const nextTrack = playlist[nextIndex]
-    setCurrentTrackIndex(nextIndex)
-    
+    const nextIndex = (currentTrackIndex + 1) % playlist.length;
+    const nextTrack = playlist[nextIndex];
+    setCurrentTrackIndex(nextIndex);
+
     if (audioRef.current && nextTrack?.src) {
-      audioRef.current.src = nextTrack.src
-      audioRef.current.load()
-      
+      audioRef.current.src = nextTrack.src;
+      audioRef.current.load();
+
       if (isPlaying) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          await audioRef.current.play()
-          addNotification(`Next track: ${nextTrack.title}`, "music")
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          await audioRef.current.play();
+          addNotification(`Next track: ${nextTrack.title}`, "music");
         } catch (error) {
-          console.error("Error playing next track:", error)
-          addNotification("Failed to play next track", "info")
+          console.error("Error playing next track:", error);
+          addNotification("Failed to play next track", "info");
         }
       }
     }
-  }
+  };
 
   const handlePreviousTrack = async () => {
-    const prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length
-    const prevTrack = playlist[prevIndex]
-    setCurrentTrackIndex(prevIndex)
-    
+    const prevIndex =
+      (currentTrackIndex - 1 + playlist.length) % playlist.length;
+    const prevTrack = playlist[prevIndex];
+    setCurrentTrackIndex(prevIndex);
+
     if (audioRef.current && prevTrack?.src) {
-      audioRef.current.src = prevTrack.src
-      audioRef.current.load()
-      
+      audioRef.current.src = prevTrack.src;
+      audioRef.current.load();
+
       if (isPlaying) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          await audioRef.current.play()
-          addNotification(`Previous track: ${prevTrack.title}`, "music")
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          await audioRef.current.play();
+          addNotification(`Previous track: ${prevTrack.title}`, "music");
         } catch (error) {
-          console.error("Error playing previous track:", error)
-          addNotification("Failed to play previous track", "info")
+          console.error("Error playing previous track:", error);
+          addNotification("Failed to play previous track", "info");
         }
       }
     }
-  }
+  };
 
   // Handle volume changes for all audio elements
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume[0] / 100
-  }, [volume])
+    if (audioRef.current) audioRef.current.volume = volume[0] / 100;
+  }, [volume]);
 
   useEffect(() => {
-    if (rainAudioRef.current) rainAudioRef.current.volume = rainVolume[0] / 100
-  }, [rainVolume])
+    if (rainAudioRef.current) rainAudioRef.current.volume = rainVolume[0] / 100;
+  }, [rainVolume]);
 
   useEffect(() => {
-    if (fireAudioRef.current) fireAudioRef.current.volume = fireVolume[0] / 100
-  }, [fireVolume])
+    if (fireAudioRef.current) fireAudioRef.current.volume = fireVolume[0] / 100;
+  }, [fireVolume]);
 
   useEffect(() => {
-    if (oceanWavesAudioRef.current) oceanWavesAudioRef.current.volume = oceanWavesVolume[0] / 100
-  }, [oceanWavesVolume])
+    if (oceanWavesAudioRef.current)
+      oceanWavesAudioRef.current.volume = oceanWavesVolume[0] / 100;
+  }, [oceanWavesVolume]);
 
   // Toggle ambient sounds
-  const toggleAmbientSound = (audioElement: HTMLAudioElement | null, volumeValue: number[]) => {
+  const toggleAmbientSound = (
+    audioElement: HTMLAudioElement | null,
+    volumeValue: number[]
+  ) => {
     if (audioElement) {
       if (volumeValue[0] > 0 && audioElement.paused) {
-        audioElement.play().catch((e) => console.error("Error playing ambient sound:", e))
+        audioElement
+          .play()
+          .catch((e) => console.error("Error playing ambient sound:", e));
       } else if (volumeValue[0] === 0 && !audioElement.paused) {
-        audioElement.pause()
+        audioElement.pause();
       }
     }
-  }
+  };
 
-  useEffect(() => toggleAmbientSound(rainAudioRef.current, rainVolume), [rainVolume])
-  useEffect(() => toggleAmbientSound(fireAudioRef.current, fireVolume), [fireVolume])
-  useEffect(() => toggleAmbientSound(oceanWavesAudioRef.current, oceanWavesVolume), [oceanWavesVolume])
+  useEffect(
+    () => toggleAmbientSound(rainAudioRef.current, rainVolume),
+    [rainVolume]
+  );
+  useEffect(
+    () => toggleAmbientSound(fireAudioRef.current, fireVolume),
+    [fireVolume]
+  );
+  useEffect(
+    () => toggleAmbientSound(oceanWavesAudioRef.current, oceanWavesVolume),
+    [oceanWavesVolume]
+  );
 
   // Timer functions
   const startTimer = () => {
     if (isTimerRunning) {
       if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
-        timerIntervalRef.current = null
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
-      setIsTimerRunning(false)
-      setBreakVoicePlayed(false)
-      setFullVoicePlayed(false)
-      addNotification("Timer paused", "timer")
+      setIsTimerRunning(false);
+      setBreakVoicePlayed(false);
+      setFullVoicePlayed(false);
+      addNotification("Timer paused", "timer");
     } else {
       if (Notification.permission !== "granted") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
-            console.log("Notification permission granted.")
+            console.log("Notification permission granted.");
           }
-        })
+        });
       }
 
-      setIsTimerRunning(true)
-      setBreakVoicePlayed(false)
-      setFullVoicePlayed(false)
-      addNotification(`Timer started: ${timerMode} session`, "timer")
-      
+      setIsTimerRunning(true);
+      setBreakVoicePlayed(false);
+      setFullVoicePlayed(false);
+      addNotification(`Timer started: ${timerMode} session`, "timer");
+
       timerIntervalRef.current = setInterval(() => {
         setTotalSecondsRemaining((prevTotalSeconds) => {
           // Check for voice countdown triggers
-          if (timerMode === "break" && prevTotalSeconds === 10 && !breakVoicePlayed) {
+          if (
+            timerMode === "break" &&
+            prevTotalSeconds === 10 &&
+            !breakVoicePlayed
+          ) {
             if (breakVoiceRef.current) {
-              breakVoiceRef.current.play()
-              setBreakVoicePlayed(true)
-              
+              breakVoiceRef.current.play();
+              setBreakVoicePlayed(true);
+
               // Set up stop sound after voice
               breakVoiceRef.current.onended = () => {
-                if (stopSfxRef.current) stopSfxRef.current.play()
-              }
+                if (stopSfxRef.current) stopSfxRef.current.play();
+              };
             }
           }
-          
-          if (timerMode === "work" && prevTotalSeconds === 11 && !fullVoicePlayed) {
+
+          if (
+            timerMode === "work" &&
+            prevTotalSeconds === 11 &&
+            !fullVoicePlayed
+          ) {
             if (fullVoiceRef.current) {
-              fullVoiceRef.current.play()
-              setFullVoicePlayed(true)
-              
+              fullVoiceRef.current.play();
+              setFullVoicePlayed(true);
+
               // Set up stop sound after voice
               fullVoiceRef.current.onended = () => {
-                if (stopSfxRef.current) stopSfxRef.current.play()
-              }
+                if (stopSfxRef.current) stopSfxRef.current.play();
+              };
             }
           }
 
           if (prevTotalSeconds <= 0) {
             if (timerIntervalRef.current) {
-              clearInterval(timerIntervalRef.current)
-              timerIntervalRef.current = null
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
             }
-            setIsTimerRunning(false)
-            setBreakVoicePlayed(false)
-            setFullVoicePlayed(false)
+            setIsTimerRunning(false);
+            setBreakVoicePlayed(false);
+            setFullVoicePlayed(false);
 
             if (timerMode === "work") {
               if (Notification.permission === "granted") {
                 new Notification("Work session finished!", {
                   body: "Time for a break!",
                   icon: "/placeholder.svg?height=64&width=64&text=🔔",
-                })
+                });
               }
-              addNotification("Work session finished! Time for a break.", "timer")
-              setTimerMode("break")
-              return breakDuration[0] * 60
+              addNotification(
+                "Work session finished! Time for a break.",
+                "timer"
+              );
+              setTimerMode("break");
+              return breakDuration[0] * 60;
             } else {
               if (Notification.permission === "granted") {
                 new Notification("Break session finished!", {
                   body: "Time for a new work session!",
                   icon: "/placeholder.svg?height=64&width=64&text=🔔",
-                })
+                });
               }
-              addNotification("Break session finished! Time for a new work session.", "timer")
-              setTimerMode("work")
-              return workDuration[0] * 60
+              addNotification(
+                "Break session finished! Time for a new work session.",
+                "timer"
+              );
+              setTimerMode("work");
+              return workDuration[0] * 60;
             }
           } else {
-            return prevTotalSeconds - 1
+            return prevTotalSeconds - 1;
           }
-        })
-      }, 1000)
+        });
+      }, 1000);
     }
-  }
+  };
 
   const resetTimer = () => {
     if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current)
-      timerIntervalRef.current = null
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
     }
-    setIsTimerRunning(false)
-    setTimerMode("work")
-    setTotalSecondsRemaining(workDuration[0] * 60)
-    setBreakVoicePlayed(false)
-    setFullVoicePlayed(false)
-    addNotification("Timer reset", "timer")
-  }
+    setIsTimerRunning(false);
+    setTimerMode("work");
+    setTotalSecondsRemaining(workDuration[0] * 60);
+    setBreakVoicePlayed(false);
+    setFullVoicePlayed(false);
+    addNotification("Timer reset", "timer");
+  };
 
   useEffect(() => {
     if (!isTimerRunning) {
       if (timerMode === "work") {
-        setTotalSecondsRemaining(workDuration[0] * 60)
+        setTotalSecondsRemaining(workDuration[0] * 60);
       } else {
-        setTotalSecondsRemaining(breakDuration[0] * 60)
+        setTotalSecondsRemaining(breakDuration[0] * 60);
       }
     }
-  }, [workDuration, breakDuration, timerMode, isTimerRunning])
+  }, [workDuration, breakDuration, timerMode, isTimerRunning]);
 
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current)
+        clearInterval(timerIntervalRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const handleClearNotifications = useCallback(() => {
-    setNotifications([])
-  }, [])
+    setNotifications([]);
+  }, []);
 
-  const displayMinutes = Math.floor(totalSecondsRemaining / 60)
-  const displaySeconds = totalSecondsRemaining % 60
+  const displayMinutes = Math.floor(totalSecondsRemaining / 60);
+  const displaySeconds = totalSecondsRemaining % 60;
 
   // Load user data from localStorage
   useEffect(() => {
-    const simulatedUser = { id: 'user_' + Math.random().toString(36).substr(2, 9), name: 'You' }
-    setCurrentUser(simulatedUser)
-  }, [])
+    const simulatedUser = {
+      id: "user_" + Math.random().toString(36).substr(2, 9),
+      name: "You",
+    };
+    setCurrentUser(simulatedUser);
+  }, []);
 
   // Function to load theme-based music
   const loadThemeMusic = (themeId: string) => {
-    setPlaylist(themePlaylists[themeId as keyof typeof themePlaylists] || themePlaylists["study-lofi"])
-    setCurrentTrackIndex(0)
+    setPlaylist(
+      themePlaylists[themeId as keyof typeof themePlaylists] ||
+        themePlaylists["study-lofi"]
+    );
+    setCurrentTrackIndex(0);
     if (isPlaying && audioRef.current) {
-      audioRef.current.src = playlist[0]?.src || ""
-      audioRef.current.load()
-      audioRef.current.play().catch(console.error)
+      audioRef.current.src = playlist[0]?.src || "";
+      audioRef.current.load();
+      audioRef.current.play().catch(console.error);
     }
-  }
+  };
 
   // Get current theme background video
   const getBackgroundVideo = () => {
-    const currentThemeData = themes.find(t => t.id === currentTheme)
-    return currentThemeData?.video || "/videos/lofigirl.mp4"
-  }
+    const currentThemeData = themes.find((t) => t.id === currentTheme);
+    return currentThemeData?.video || "/videos/lofigirl.mp4";
+  };
 
   const toggleMute = () => {
     if (isMuted) {
@@ -496,13 +590,52 @@ export default function LofiPlayer() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Audio Elements */}
-      <audio ref={audioRef} src={playlist[currentTrackIndex]?.src} preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={rainAudioRef} src="/rain.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={fireAudioRef} src="/fire.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={oceanWavesAudioRef} src="/ocean-waves.mp3" preload="metadata" loop crossOrigin="anonymous" />
-      <audio ref={breakVoiceRef} src="music/time/break/voice.mp3" preload="auto" crossOrigin="anonymous" />
-      <audio ref={fullVoiceRef} src="music/time/full/voice.mp3" preload="auto" crossOrigin="anonymous" />
-      <audio ref={stopSfxRef} src="music/time/stop.mp3" preload="auto" crossOrigin="anonymous" />
+      <audio
+        ref={audioRef}
+        src={playlist[currentTrackIndex]?.src}
+        preload="metadata"
+        loop
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={rainAudioRef}
+        src="/rain.mp3"
+        preload="metadata"
+        loop
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={fireAudioRef}
+        src="/fire.mp3"
+        preload="metadata"
+        loop
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={oceanWavesAudioRef}
+        src="/ocean-waves.mp3"
+        preload="metadata"
+        loop
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={breakVoiceRef}
+        src="music/time/break/voice.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={fullVoiceRef}
+        src="music/time/full/voice.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={stopSfxRef}
+        src="music/time/stop.mp3"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
 
       {/* Background Video - Dynamic based on theme */}
       <div className="absolute inset-0">
@@ -533,7 +666,10 @@ export default function LofiPlayer() {
       />
 
       {/* Message Toast Notification (Top Center, below Dynamic Island) */}
-      <ToastNotification notification={latestNotification} onClose={() => setLatestNotification(null)} />
+      <ToastNotification
+        notification={latestNotification}
+        onClose={() => setLatestNotification(null)}
+      />
 
       {/* Timer Dynamic Island (Bottom Left) */}
       <TimerDynamicIsland
@@ -555,7 +691,11 @@ export default function LofiPlayer() {
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
           className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
         >
-          <div className={`transition-transform duration-300 ${isSettingsOpen ? "rotate-45" : ""}`}>
+          <div
+            className={`transition-transform duration-300 ${
+              isSettingsOpen ? "rotate-45" : ""
+            }`}
+          >
             <div className="w-5 h-5 relative">
               <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
               <div className="absolute top-1 left-1/2 w-1 h-1 bg-white rounded-full transform -translate-x-1/2"></div>
@@ -577,28 +717,28 @@ export default function LofiPlayer() {
             <MessageSquare className="h-6 w-6" />
             {unreadMessageCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center min-w-[20px] px-1">
-                {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
               </span>
             )}
           </Button>
         </div>
       )}
 
-       
-
       {/* World Chat Component */}
-      <WorldChat 
-        isOpen={isChatOpen} 
-        onClose={() => setIsChatOpen(false)} 
-        onNewMessage={handleNewChatMessage} 
+      <WorldChat
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onNewMessage={handleNewChatMessage}
         // @ts-ignore
-        currentUser={currentUser} 
+        currentUser={currentUser}
       />
 
       {/* Settings Panel */}
       <div
         className={`fixed right-4 top-20 z-30 w-72 transition-all duration-300 ease-in-out ${
-          isSettingsOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"
+          isSettingsOpen
+            ? "translate-x-0 opacity-100"
+            : "translate-x-full opacity-0 pointer-events-none"
         }`}
       >
         <div className="ios-glass rounded-xl p-3 transform transition-all duration-300 flex flex-col max-h-full">
@@ -620,7 +760,10 @@ export default function LofiPlayer() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="themes" className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide">
+            <TabsContent
+              value="themes"
+              className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide"
+            >
               <h3 className="text-white font-semibold text-sm mb-2">Themes</h3>
               {themes.map((theme) => (
                 <div
@@ -631,8 +774,8 @@ export default function LofiPlayer() {
                       : "hover:scale-[1.01] hover:ring-1 hover:ring-white/30"
                   }`}
                   onClick={() => {
-                    setCurrentTheme(theme.id)
-                    loadThemeMusic(theme.id)
+                    setCurrentTheme(theme.id);
+                    loadThemeMusic(theme.id);
                   }}
                 >
                   <div className="ios-glass-card rounded-lg overflow-hidden">
@@ -643,38 +786,63 @@ export default function LofiPlayer() {
                       playsInline
                       className="w-full h-16 object-cover"
                     />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${theme.color} to-transparent`} />
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-t ${theme.color} to-transparent`}
+                    />
                     <div className="absolute bottom-0 left-0 right-0 p-2">
-                      <h4 className="text-white font-medium text-xs drop-shadow-md">{theme.name}</h4>
+                      <h4 className="text-white font-medium text-xs drop-shadow-md">
+                        {theme.name}
+                      </h4>
                     </div>
                   </div>
                 </div>
               ))}
             </TabsContent>
 
-            <TabsContent value="sounds" className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide">
+            <TabsContent
+              value="sounds"
+              className="flex-1 mt-2 space-y-2 overflow-y-auto scrollbar-hide"
+            >
               <h3 className="text-white font-semibold text-sm mb-2">Ambient</h3>
               <div className="space-y-2">
                 <div className="ios-glass-card rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-white text-xs">Rain</span>
-                    <span className="text-white/70 text-xs">{rainVolume[0]}%</span>
+                    <span className="text-white/70 text-xs">
+                      {rainVolume[0]}%
+                    </span>
                   </div>
-                  <Slider value={rainVolume} onValueChange={setRainVolume} max={100} step={1} className="ios-slider h-1" />
+                  <Slider
+                    value={rainVolume}
+                    onValueChange={setRainVolume}
+                    max={100}
+                    step={1}
+                    className="ios-slider h-1"
+                  />
                 </div>
 
                 <div className="ios-glass-card rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-white text-xs">Fire</span>
-                    <span className="text-white/70 text-xs">{fireVolume[0]}%</span>
+                    <span className="text-white/70 text-xs">
+                      {fireVolume[0]}%
+                    </span>
                   </div>
-                  <Slider value={fireVolume} onValueChange={setFireVolume} max={100} step={1} className="ios-slider h-1" />
+                  <Slider
+                    value={fireVolume}
+                    onValueChange={setFireVolume}
+                    max={100}
+                    step={1}
+                    className="ios-slider h-1"
+                  />
                 </div>
 
                 <div className="ios-glass-card rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-white text-xs">Ocean</span>
-                    <span className="text-white/70 text-xs">{oceanWavesVolume[0]}%</span>
+                    <span className="text-white/70 text-xs">
+                      {oceanWavesVolume[0]}%
+                    </span>
                   </div>
                   <Slider
                     value={oceanWavesVolume}
@@ -690,135 +858,168 @@ export default function LofiPlayer() {
         </div>
       </div>
 
-    {/* Music Player Controls - Bottom Center - Ultra Compact */}
-{/* Music Player Controls - Bottom Center - Ultra Compact */}
-<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-  <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-    <div className="flex items-center gap-1">
-      <button
-        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={handlePreviousTrack}
-      >
-        <SkipBack className="h-4 w-4" />
-      </button>
-      <button
-        className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
-        onClick={handlePlayPause}
-      >
-        {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-      </button>
-      <button
-        className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={handleNextTrack}
-      >
-        <SkipForward className="h-4 w-4" />
-      </button>
-    </div>
-  </div>
-</div>
+      {/* Music Player Controls - Bottom Center - Ultra Compact */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
+        <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+          <div className="flex items-center gap-1">
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={handlePreviousTrack}
+            >
+              <SkipBack className="h-4 w-4" />
+            </button>
+            <button
+              className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
+              onClick={handlePlayPause}
+            >
+              {isPlaying ? (
+                <Pause className="h-5 w-5" />
+              ) : (
+                <Play className="h-5 w-5 ml-0.5" />
+              )}
+            </button>
+            <button
+              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={handleNextTrack}
+            >
+              <SkipForward className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
 
-{/* Speed Control - Positioned on the left side of music controls */}
-<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 -translate-x-32">
-  <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-    <button 
-      className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+      {/* Speed Control - Positioned on the left side of music controls */}
+     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 -translate-x-32">
+  <div className="ios-glass rounded-full p-1.5 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15 w-12 h-12 flex items-center justify-center">
+    <button
+      className="text-white/70 hover:text-white rounded-full transition-all duration-200 hover:scale-105 active:scale-95 w-10 h-10 flex items-center justify-center"
       onClick={togglePlaybackSpeed}
-      title={`Playback speed: ${playbackSpeed} (${playbackSpeed === 'slow' ? '0.75x' : playbackSpeed === 'normal' ? '1x' : '1.25x'})`}
+      title={`Playback speed: ${playbackSpeed} (${
+        playbackSpeed === "slow"
+          ? "0.75x"
+          : playbackSpeed === "normal"
+          ? "1x"
+          : "1.25x"
+      })`}
     >
-      {playbackSpeed === 'slow' ? (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      {playbackSpeed === "slow" ? (
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+          <circle cx="24" cy="24" r="16" fill="#fff"/>
+          <line x1="24" y1="24" x2="10" y2="28" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="2.5" fill="#3b82f6" />
         </svg>
-      ) : playbackSpeed === 'normal' ? (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+      ) : playbackSpeed === "normal" ? (
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+          <circle cx="24" cy="24" r="16" fill="#fff" />
+          <line x1="24" y1="24" x2="24" y2="8" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="2.5" fill="#22c55e" />
         </svg>
       ) : (
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+          <circle cx="24" cy="24" r="16" fill="#fff" />
+          <line x1="24" y1="24" x2="38" y2="20" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="24" cy="24" r="2.5" fill="#f97316" />
         </svg>
       )}
     </button>
   </div>
 </div>
 
-{/* Volume Control - Positioned on the right side of music controls */}
-<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 translate-x-20">
-  <div className="group relative">
-    <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-      <button 
-        className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-        onClick={toggleMute}
-      >
-        {isMuted || volume[0] === 0 ? (
-          <VolumeX className="h-4 w-4" />
-        ) : (
-          <Volume2 className="h-4 w-4" />
-        )}
-      </button>
-    </div>
-    
-    {/* Vertical Volume Slider Popup - Extended hover area */}
-    <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
-      
-      <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
-        <div className="flex flex-col items-center gap-3">
-          <span className="text-white/70 text-xs font-medium">
-            {isMuted ? "Muted" : `${volume[0]}%`}
-          </span>
-          <div className="h-24 w-8 flex items-center justify-center relative px-2">
-            <div 
-              className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
-                const percentage = Math.round((y / rect.height) * 100);
-                setVolume([percentage]);
-                setIsMuted(false);
-              }}
+
+      {/* Volume Control - Positioned on the right side of music controls */}
+      <div className="absolute bottom-6 left-1/2 transform translate-x-20">
+        <div className="group relative">
+          <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+            <button
+              className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+              onClick={toggleMute}
             >
-              <div 
-                className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
-                style={{ height: `${isMuted ? 0 : volume[0]}%` }}
-              ></div>
-              <div 
-                className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
-                style={{ 
-                  bottom: `${isMuted ? 0 : volume[0]}%`, 
-                  left: '50%',
-                  transform: 'translateX(-50%) translateY(50%)' 
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  const slider = e.currentTarget.parentElement;
-                  const rect = slider!.getBoundingClientRect();
-                  const handleMouseMove = (e: MouseEvent) => {
-                    const y = Math.max(0, Math.min(rect.height, rect.bottom - e.clientY));
-                    const percentage = Math.round((y / rect.height) * 100);
-                    setVolume([percentage]);
-                    setIsMuted(false);
-                  };
-                  const handleMouseUp = () => {
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                  };
-                  document.addEventListener('mousemove', handleMouseMove);
-                  document.addEventListener('mouseup', handleMouseUp);
-                }}
-              ></div>
+              {isMuted || volume[0] === 0 ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Vertical Volume Slider Popup - Extended hover area */}
+          <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
+
+            <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
+              <div className="flex flex-col items-center gap-3">
+                <span className="text-white/70 text-xs font-medium">
+                  {isMuted ? "Muted" : `${volume[0]}%`}
+                </span>
+                <div className="h-24 w-8 flex items-center justify-center relative px-2">
+                  <div
+                    className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const y = Math.max(
+                        0,
+                        Math.min(rect.height, rect.bottom - e.clientY)
+                      );
+                      const percentage = Math.round((y / rect.height) * 100);
+                      setVolume([percentage]);
+                      setIsMuted(false);
+                    }}
+                  >
+                    <div
+                      className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
+                      style={{ height: `${isMuted ? 0 : volume[0]}%` }}
+                    ></div>
+                    <div
+                      className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
+                      style={{
+                        bottom: `${isMuted ? 0 : volume[0]}%`,
+                        left: "50%",
+                        transform: "translateX(-50%) translateY(50%)",
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        const slider = e.currentTarget.parentElement;
+                        const rect = slider!.getBoundingClientRect();
+                        const handleMouseMove = (e: MouseEvent) => {
+                          const y = Math.max(
+                            0,
+                            Math.min(rect.height, rect.bottom - e.clientY)
+                          );
+                          const percentage = Math.round(
+                            (y / rect.height) * 100
+                          );
+                          setVolume([percentage]);
+                          setIsMuted(false);
+                        };
+                        const handleMouseUp = () => {
+                          document.removeEventListener(
+                            "mousemove",
+                            handleMouseMove
+                          );
+                          document.removeEventListener(
+                            "mouseup",
+                            handleMouseUp
+                          );
+                        };
+                        document.addEventListener("mousemove", handleMouseMove);
+                        document.addEventListener("mouseup", handleMouseUp);
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                {isMuted || volume[0] === 0 ? (
+                  <VolumeX className="h-3 w-3 text-white/50" />
+                ) : (
+                  <Volume2 className="h-3 w-3 text-white/50" />
+                )}
+              </div>
             </div>
           </div>
-          {isMuted || volume[0] === 0 ? (
-            <VolumeX className="h-3 w-3 text-white/50" />
-          ) : (
-            <Volume2 className="h-3 w-3 text-white/50" />
-          )}
         </div>
       </div>
     </div>
-  </div>
-</div>
-</div>
-  )
+  );
 }
