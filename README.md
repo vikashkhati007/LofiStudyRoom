@@ -1,4 +1,4 @@
-# 🎵 Lofi Player
+# 🎵 LofiStudyRoom
 
 A beautiful, feature-rich lofi music player built with Next.js, TypeScript, and Tailwind CSS. Create the perfect ambient atmosphere for studying, working, or relaxing with customizable themes, ambient sounds, and productivity tools.
 
