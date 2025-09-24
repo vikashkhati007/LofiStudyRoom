@@ -1,6 +1,6 @@
 # 🎵 LofiStudyRoom
 
-A beautiful, feature-rich lofi music player built with Next.js, TypeScript, and Tailwind CSS. Create the perfect ambient atmosphere for studying, working, or relaxing with customizable themes, ambient sounds, and productivity tools.
+LofiStudyRoom is a modern, feature-rich web app designed to create the ultimate ambient environment for students, professionals, and creators. Enjoy curated lofi study music, customizable themes, and ambient sounds that boost focus, concentration, and productivity. Whether you’re preparing for exams, working remotely, or relaxing after a long day, LofiStudyRoom delivers seamless study sessions with beautiful visuals and powerful productivity tools like Pomodoro timers and a global chat.
 
 ## ✨ Features
 
