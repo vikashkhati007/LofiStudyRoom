@@ -90,13 +90,13 @@ export default function LofiPlayer() {
     {
       id: "study-lofi",
       name: "Study Lofi",
-      video: "/videos/night.mp4",
+      video: "/videos/study.mp4",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
       id: "ambient",
       name: "Ambient",
-      video: "/videos/night.mp4",
+      video: "/videos/ambient.mp4",
       color: "from-blue-500/20 to-cyan-500/20",
     },
   ];

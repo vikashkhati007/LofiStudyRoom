@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { MessageSquare, Send, X } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { databases, client, DATABASE_ID, COLLECTION_ID_MESSAGES } from "@/lib/appwrite"
 import { ID, Query } from "appwrite"
 
@@ -44,6 +42,68 @@ const generateUserId = (): string => {
   return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
+// Optimized animation variants for smooth 120fps performance
+const containerVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.15,
+      ease: [0.25, 0.1, 0.25, 1] // Custom cubic-bezier for smoothness
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: 10,
+    transition: {
+      duration: 0.1,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
+
+const inputBarVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: 20, 
+    scale: 0.95,
+    transition: {
+      duration: 0.15,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
+
+const messageVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 15, 
+    scale: 0.95,
+    filter: "blur(4px)"
+  },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
+
 export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
@@ -52,9 +112,12 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const processedMessageIds = useRef<Set<string>>(new Set()) // Track processed messages
 
-  // Scroll to bottom of messages
+  // Scroll to bottom of messages with smooth behavior
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ 
+      behavior: "smooth",
+      block: "end"
+    })
   }
 
   // Initialize user (get from localStorage or create new)
@@ -89,8 +152,6 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
     initializeUser()
   }, [])
 
-
-
   // Fetch initial messages and subscribe to real-time updates
   useEffect(() => {
     if (!currentUser) return
@@ -102,7 +163,7 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
           COLLECTION_ID_MESSAGES,
           [Query.orderDesc("timestamp"), Query.limit(50)] // Fetch latest 50 messages
         )
-      {/* @ts-ignore */}
+        {/* @ts-ignore */}
         const initialMessages = response.documents.reverse() as Message[]
         setMessages(initialMessages)
         
@@ -157,9 +218,12 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
     }
   }, [currentUser, onNewMessage])
 
-  // Scroll to bottom when messages update
+  // Smooth scroll to bottom when messages update
   useEffect(() => {
-    scrollToBottom()
+    // Use requestAnimationFrame for smoother scrolling
+    requestAnimationFrame(() => {
+      scrollToBottom()
+    })
   }, [messages])
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -180,64 +244,89 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <>
-          {/* Floating Input Bar */}
+          {/* Floating Input Bar with optimized animations */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
+            variants={{
+              hidden: { opacity: 0, y: 20, scale: 0.95 },
+              visible: { 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                transition: {
+                  duration: 0.2,
+                  ease: "easeOut"
+                }
+              },
+              exit: { 
+                opacity: 0, 
+                y: 20, 
+                scale: 0.95,
+                transition: {
+                  duration: 0.15,
+                  ease: "easeIn"
+                }
+              }
+            }}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             className="fixed bottom-6 right-4 w-80 z-50"
+            style={{
+              willChange: 'transform, opacity',
+              transform: 'translateZ(0)' // Force GPU acceleration
+            }}
           >
             <div className="relative">
               <form onSubmit={handleSendMessage} 
-                    className="bg-white/10 backdrop-blur-xl rounded-full border border-white/20 p-3 flex items-center gap-3 shadow-2xl"
-                    style={{ backdropFilter: 'blur(40px)' }}>
+                    className="bg-white/10 backdrop-blur-xl rounded-full border border-white/20 p-3 flex items-center gap-3 shadow-2xl transition-all duration-150"
+                    style={{ 
+                      backdropFilter: 'blur(40px)',
+                      willChange: 'transform'
+                    }}>
                 <MessageSquare className="h-5 w-5 text-white/60 flex-shrink-0" />
                 <input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   placeholder="Type a message..."
-                  className="flex-1 bg-transparent text-white placeholder:text-white/50 border-0 outline-none text-sm"
+                  className="flex-1 bg-transparent text-white placeholder:text-white/50 border-0 outline-none text-sm transition-all duration-100"
                   disabled={!currentUser || isLoading}
                   maxLength={500}
+                  style={{ willChange: 'contents' }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey && inputMessage.trim()) {
                       handleSendMessage(e)
                     }
                   }}
                 />
-                <button
+                <motion.button
                   type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500/50 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 transition-colors"
+                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500/50 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0"
                   disabled={!currentUser || isLoading || !inputMessage.trim()}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.1 }}
+                  style={{ willChange: 'transform' }}
                 >
                   <Send className="h-4 w-4" />
-                </button>
+                </motion.button>
               </form>
-              
-              {/* Close button positioned outside
-              <button
-                onClick={onClose}
-                className="absolute -top-1 -right-1 bg-white/20 hover:bg-white/30 text-white rounded-full w-6 h-6 flex items-center justify-center backdrop-blur-md transition-colors"
-              >
-                <X className="h-3 w-3" />
-              </button> */}
             </div>
           </motion.div>
 
-          {/* Floating Chat Container with Username Header */}
+          {/* Floating Chat Container with optimized performance */}
           <div className="fixed bottom-20 right-4 w-80 z-30">
-
             {/* Chat bubbles area */}
             <div className="h-[320px] pointer-events-none">
-              {/* Scrollable messages area with custom thin scrollbar */}
-              <div className="h-full pointer-events-auto overflow-y-auto pr-1" 
+              {/* Scrollable messages area with hardware acceleration */}
+              <div className="h-full pointer-events-auto overflow-y-auto pr-1 scroll-smooth" 
                    style={{
                      scrollbarWidth: 'thin',
-                     scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent'
+                     scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
+                     willChange: 'scroll-position',
+                     transform: 'translateZ(0)' // Force GPU layer
                    }}>
                 <style jsx global>{`
                   .thin-scrollbar::-webkit-scrollbar {
@@ -257,9 +346,29 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
                 <div className="p-2 space-y-2 thin-scrollbar" style={{ height: 'fit-content' }}>
                   {isLoading ? (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      variants={{
+                        hidden: { opacity: 0, y: 10 },
+                        visible: { 
+                          opacity: 1, 
+                          y: 0,
+                          transition: {
+                            duration: 0.15,
+                            ease: "easeOut"
+                          }
+                        },
+                        exit: { 
+                          opacity: 0, 
+                          y: 10,
+                          transition: {
+                            duration: 0.1,
+                            ease: "easeOut"
+                          }
+                        }
+                      }}
+                      initial="hidden"
+                      animate="visible"
                       className="flex justify-center"
+                      style={{ willChange: 'transform, opacity' }}
                     >
                       <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-4 py-3 text-center border border-white/20 shadow-xl"
                            style={{ backdropFilter: 'blur(40px)' }}>
@@ -268,9 +377,29 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
                     </motion.div>
                   ) : messages.length === 0 ? (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      variants={{
+                        hidden: { opacity: 0, y: 10 },
+                        visible: { 
+                          opacity: 1, 
+                          y: 0,
+                          transition: {
+                            duration: 0.15,
+                            ease: "easeOut"
+                          }
+                        },
+                        exit: { 
+                          opacity: 0, 
+                          y: 10,
+                          transition: {
+                            duration: 0.1,
+                            ease: "easeOut"
+                          }
+                        }
+                      }}
+                      initial="hidden"
+                      animate="visible"
                       className="flex justify-center"
+                      style={{ willChange: 'transform, opacity' }}
                     >
                       <div className="bg-white/10 backdrop-blur-xl rounded-2xl px-4 py-3 text-center border border-white/20 shadow-xl"
                            style={{ backdropFilter: 'blur(40px)' }}>
@@ -279,63 +408,90 @@ export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatPr
                       </div>
                     </motion.div>
                   ) : (
-                    messages.map((msg, index) => (
-                      <motion.div
-                        key={msg.$id}
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ 
-                          type: "spring", 
-                          stiffness: 400, 
-                          damping: 25,
-                          delay: index * 0.05 
-                        }}
-                        className={`flex ${msg.senderId === currentUser?.id ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className="relative max-w-[85%] rounded-2xl px-4 py-3 shadow-xl border"
-                          style={{
-                            background: msg.senderId === currentUser?.id 
-                              ? 'rgba(59, 130, 246, 0.4)' 
-                              : 'rgba(255, 255, 255, 0.15)',
-                            backdropFilter: 'blur(40px)',
-                            border: msg.senderId === currentUser?.id 
-                              ? '1px solid rgba(59, 130, 246, 0.3)' 
-                              : '1px solid rgba(255, 255, 255, 0.2)',
+                    <AnimatePresence mode="popLayout">
+                      {messages.map((msg) => (
+                        <motion.div
+                          key={msg.$id}
+                          variants={{
+                            hidden: { 
+                              opacity: 0, 
+                              y: 15, 
+                              scale: 0.95,
+                              filter: "blur(4px)"
+                            },
+                            visible: { 
+                              opacity: 1, 
+                              y: 0, 
+                              scale: 1,
+                              filter: "blur(0px)",
+                              transition: {
+                                duration: 0.2,
+                                ease: "easeOut"
+                              }
+                            }
+                          }}
+                          initial="hidden"
+                          animate="visible"
+                          layout
+                          layoutId={msg.$id}
+                          className={`flex ${msg.senderId === currentUser?.id ? "justify-end" : "justify-start"}`}
+                          style={{ 
+                            willChange: 'transform, opacity',
+                            transform: 'translateZ(0)' // GPU acceleration
                           }}
                         >
-                          {msg.senderId !== currentUser?.id && (
-                            <div className="text-xs font-medium mb-1 text-white/70">
-                              {msg.senderName}
+                          <motion.div
+                            className="relative max-w-[85%] rounded-2xl px-4 py-3 shadow-xl border transition-all duration-150"
+                            style={{
+                              background: msg.senderId === currentUser?.id 
+                                ? 'rgba(59, 130, 246, 0.4)' 
+                                : 'rgba(255, 255, 255, 0.15)',
+                              backdropFilter: 'blur(40px)',
+                              border: msg.senderId === currentUser?.id 
+                                ? '1px solid rgba(59, 130, 246, 0.3)' 
+                                : '1px solid rgba(255, 255, 255, 0.2)',
+                              willChange: 'transform'
+                            }}
+                            whileHover={{ 
+                              scale: 1.02,
+                              transition: { duration: 0.1 }
+                            }}
+                          >
+                            {msg.senderId !== currentUser?.id && (
+                              <div className="text-xs font-medium mb-1 text-white/70">
+                                {msg.senderName}
+                              </div>
+                            )}
+                            <div className="text-white text-sm leading-relaxed">
+                              {msg.messageContent}
                             </div>
-                          )}
-                          <div className="text-white text-sm leading-relaxed">
-                            {msg.messageContent}
-                          </div>
-                          <div className={`text-xs mt-1 text-right ${
-                            msg.senderId === currentUser?.id ? "text-blue-200/70" : "text-white/50"
-                          }`}>
-                            {new Date(msg.timestamp).toLocaleTimeString([], { 
-                              hour: "2-digit", 
-                              minute: "2-digit" 
-                            })}
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))
+                            <div className={`text-xs mt-1 text-right ${
+                              msg.senderId === currentUser?.id ? "text-blue-200/70" : "text-white/50"
+                            }`}>
+                              {new Date(msg.timestamp).toLocaleTimeString([], { 
+                                hour: "2-digit", 
+                                minute: "2-digit" 
+                              })}
+                            </div>
+                          </motion.div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
               </div>
               
-              {/* Subtle natural fade overlays */}
+              {/* Optimized fade overlays */}
               <div className="absolute top-0 left-0 right-0 h-20 pointer-events-none z-10"
                    style={{ 
-                     background: 'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.01) 75%, transparent 100%)'
+                     background: 'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.01) 75%, transparent 100%)',
+                     willChange: 'transform'
                    }} />
               <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none z-10"
                    style={{ 
-                     background: 'linear-gradient(0deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.01) 75%, transparent 100%)'
+                     background: 'linear-gradient(0deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.01) 75%, transparent 100%)',
+                     willChange: 'transform'
                    }} />
             </div>
           </div>
