@@ -12,3 +12,17 @@ export interface Message {
   timestamp: string;
   senderId: string;
 }
+
+export interface Message {
+  $id: string
+  senderName: string
+  messageContent: string
+  timestamp: string
+  senderId: string // Ensure this is string
+}
+
+export interface WorldChatProps {
+  isOpen: boolean
+  onClose: () => void
+  onNewMessage?: (message: Message) => void
+}

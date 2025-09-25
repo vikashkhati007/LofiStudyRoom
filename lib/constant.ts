@@ -51,3 +51,76 @@
       },
     ],
   };
+
+
+  export const adjectives = [
+  "Chill", "Cozy", "Dreamy", "Mellow", "Peaceful", "Serene", "Calm", "Zen", "Smooth", "Soft",
+  "Warm", "Cool", "Misty", "Cloudy", "Starry", "Lunar", "Solar", "Ocean", "Forest", "Mountain"
+]
+
+export const nouns = [
+  "Panda", "Cat", "Fox", "Owl", "Bear", "Wolf", "Deer", "Rabbit", "Turtle", "Dolphin",
+  "Leaf", "Cloud", "Star", "Moon", "Wave", "Breeze", "Rain", "Snow", "Fire", "Stone"
+]
+
+
+export const containerVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.15,
+      ease: [0.25, 0.1, 0.25, 1] // Custom cubic-bezier for smoothness
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: 10,
+    transition: {
+      duration: 0.1,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
+
+export const inputBarVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: 20, 
+    scale: 0.95,
+    transition: {
+      duration: 0.15,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
+
+export const messageVariants = {
+  hidden: { 
+    opacity: 0, 
+    y: 15, 
+    scale: 0.95,
+    filter: "blur(4px)"
+  },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.2,
+      ease: [0.25, 0.1, 0.25, 1]
+    }
+  }
+}
