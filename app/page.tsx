@@ -28,8 +28,8 @@ export default function LofiPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTheme, setCurrentTheme] = useState("study-lofi");
   const [volume, setVolume] = useState([75]);
-  const [rainVolume, setRainVolume] = useState([30]);
-  const [fireVolume, setFireVolume] = useState([20]);
+  const [rainVolume, setRainVolume] = useState([0]);
+  const [fireVolume, setFireVolume] = useState([0]);
   const [oceanWavesVolume, setOceanWavesVolume] = useState([0]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
