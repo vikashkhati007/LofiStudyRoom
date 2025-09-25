@@ -18,11 +18,10 @@ import {
   MessageSquare,
   Volume2,
   VolumeX,
+  Shuffle,
 } from "lucide-react";
 import { themePlaylists, themes } from "@/lib/constant";
 import { Message, NotificationItem } from "@/lib/types";
-
-
 
 export default function LofiPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -45,6 +44,12 @@ export default function LofiPlayer() {
   } | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const processedNotificationIds = useRef<Set<string>>(new Set());
+
+  // Random shuffle states
+  const [isShuffleMode, setIsShuffleMode] = useState(true); // Default to shuffle mode
+  const [shuffledPlaylist, setShuffledPlaylist] = useState<number[]>([]);
+  const [playlistHistory, setPlaylistHistory] = useState<number[]>([]);
+  const [currentShuffleIndex, setCurrentShuffleIndex] = useState(0);
 
   // Timer states
   const [totalSecondsRemaining, setTotalSecondsRemaining] = useState(25 * 60);
@@ -76,6 +81,35 @@ export default function LofiPlayer() {
   // Themes configuration
 
   const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"]);
+
+  // Helper function to create shuffled playlist
+  const createShuffledPlaylist = useCallback((playlistLength: number) => {
+    const indices = Array.from({ length: playlistLength }, (_, i) => i);
+    const shuffled = [...indices];
+
+    // Fisher-Yates shuffle algorithm
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
+  }, []);
+
+  // Initialize shuffled playlist when playlist changes
+  useEffect(() => {
+    if (playlist.length > 0) {
+      const shuffled = createShuffledPlaylist(playlist.length);
+      setShuffledPlaylist(shuffled);
+      setCurrentShuffleIndex(0);
+      setPlaylistHistory([]);
+
+      // Set current track to first in shuffle
+      if (isShuffleMode) {
+        setCurrentTrackIndex(shuffled[0]);
+      }
+    }
+  }, [playlist, createShuffledPlaylist]);
 
   const currentTrack = {
     title: playlist[currentTrackIndex]?.title || "No track",
@@ -127,6 +161,27 @@ export default function LofiPlayer() {
       }
 
       return nextSpeed;
+    });
+  };
+
+  // Toggle shuffle mode
+  const toggleShuffleMode = () => {
+    setIsShuffleMode((prev) => {
+      const newShuffleMode = !prev;
+
+      if (newShuffleMode) {
+        // Switching to shuffle mode
+        const shuffled = createShuffledPlaylist(playlist.length);
+        setShuffledPlaylist(shuffled);
+        setCurrentShuffleIndex(shuffled.indexOf(currentTrackIndex));
+        setPlaylistHistory([]);
+        addNotification("Shuffle mode enabled", "music");
+      } else {
+        // Switching to normal mode
+        addNotification("Shuffle mode disabled", "music");
+      }
+
+      return newShuffleMode;
     });
   };
 
@@ -247,9 +302,31 @@ export default function LofiPlayer() {
     }
   };
 
-  // Handle playlist navigation
+  // Handle playlist navigation with shuffle support
   const handleNextTrack = async () => {
-    const nextIndex = (currentTrackIndex + 1) % playlist.length;
+    let nextIndex: number;
+
+    if (isShuffleMode) {
+      // Add current track to history
+      setPlaylistHistory((prev) => [...prev, currentShuffleIndex]);
+
+      // Get next track from shuffled playlist
+      if (currentShuffleIndex < shuffledPlaylist.length - 1) {
+        setCurrentShuffleIndex((prev) => prev + 1);
+        nextIndex = shuffledPlaylist[currentShuffleIndex + 1];
+      } else {
+        // End of shuffled playlist, create new shuffle
+        const newShuffled = createShuffledPlaylist(playlist.length);
+        setShuffledPlaylist(newShuffled);
+        setCurrentShuffleIndex(0);
+        setPlaylistHistory([]);
+        nextIndex = newShuffled[0];
+      }
+    } else {
+      // Normal sequential mode
+      nextIndex = (currentTrackIndex + 1) % playlist.length;
+    }
+
     const nextTrack = playlist[nextIndex];
     setCurrentTrackIndex(nextIndex);
 
@@ -271,8 +348,32 @@ export default function LofiPlayer() {
   };
 
   const handlePreviousTrack = async () => {
-    const prevIndex =
-      (currentTrackIndex - 1 + playlist.length) % playlist.length;
+    let prevIndex: number;
+
+    if (isShuffleMode) {
+      // Go back in history if available
+      if (playlistHistory.length > 0) {
+        const lastHistoryIndex = playlistHistory[playlistHistory.length - 1];
+        setPlaylistHistory((prev) => prev.slice(0, -1));
+        setCurrentShuffleIndex(lastHistoryIndex);
+        prevIndex = shuffledPlaylist[lastHistoryIndex];
+      } else {
+        // No history, get random previous track
+        const randomIndex = Math.floor(Math.random() * playlist.length);
+        prevIndex = randomIndex;
+        setCurrentTrackIndex(randomIndex);
+
+        // Update shuffle index to match
+        const shuffleIndex = shuffledPlaylist.indexOf(randomIndex);
+        if (shuffleIndex !== -1) {
+          setCurrentShuffleIndex(shuffleIndex);
+        }
+      }
+    } else {
+      // Normal sequential mode
+      prevIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+    }
+
     const prevTrack = playlist[prevIndex];
     setCurrentTrackIndex(prevIndex);
 
@@ -793,132 +894,132 @@ export default function LofiPlayer() {
         </div>
       </div>
 
+
       {/* Music Player Controls - Bottom Center - Ultra Compact */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2">
-        <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-          <div className="flex items-center gap-1">
-            <button
-              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-              onClick={handlePreviousTrack}
-            >
-              <SkipBack className="h-4 w-4" />
-            </button>
-            <button
-              className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
-              onClick={handlePlayPause}
-            >
-              {isPlaying ? (
-                <Pause className="h-5 w-5" />
-              ) : (
-                <Play className="h-5 w-5 ml-0.5" />
-              )}
-            </button>
-            <button
-              className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-              onClick={handleNextTrack}
-            >
-              <SkipForward className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Speed Control - Positioned on the left side of music controls */}
-     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 -translate-x-32">
-  <div className="ios-glass rounded-full p-1.5 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15 w-12 h-12 flex items-center justify-center">
-    <button
-      className="text-white/70 hover:text-white rounded-full transition-all duration-200 hover:scale-105 active:scale-95 w-10 h-10 flex items-center justify-center"
-      onClick={togglePlaybackSpeed}
-      title={`Playback speed: ${playbackSpeed} (${
-        playbackSpeed === "slow"
-          ? "0.75x"
-          : playbackSpeed === "normal"
-          ? "1x"
-          : "1.25x"
-      })`}
-    >
-      {playbackSpeed === "slow" ? (
-        <svg width="24" height="24" viewBox="0 0 48 48">
-          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-          <circle cx="24" cy="24" r="16" fill="#fff"/>
-          <line x1="24" y1="24" x2="10" y2="28" stroke="#3b82f6" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="24" cy="24" r="2.5" fill="#3b82f6" />
-        </svg>
-      ) : playbackSpeed === "normal" ? (
-        <svg width="24" height="24" viewBox="0 0 48 48">
-          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-          <circle cx="24" cy="24" r="16" fill="#fff" />
-          <line x1="24" y1="24" x2="24" y2="8" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="24" cy="24" r="2.5" fill="#22c55e" />
-        </svg>
-      ) : (
-        <svg width="24" height="24" viewBox="0 0 48 48">
-          <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-          <circle cx="24" cy="24" r="16" fill="#fff" />
-          <line x1="24" y1="24" x2="38" y2="20" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="24" cy="24" r="2.5" fill="#f97316" />
-        </svg>
-      )}
-    </button>
-  </div>
-</div>
-
-
-      {/* Volume Control - Positioned on the right side of music controls */}
-      <div className="absolute bottom-6 left-1/2 transform translate-x-20">
-        <div className="group relative">
-          <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
-            <button
-              className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
-              onClick={toggleMute}
-            >
-              {isMuted || volume[0] === 0 ? (
-                <VolumeX className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4" />
-              )}
-            </button>
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="flex items-center justify-center gap-8">
+          {/* Speed Control - Left */}
+          <div>
+            <div className="ios-glass rounded-full p-1.5 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15 w-12 h-12 flex items-center justify-center">
+              <button
+                className="text-white/70 hover:text-white rounded-full transition-all duration-200 hover:scale-105 active:scale-95 w-10 h-10 flex items-center justify-center"
+                onClick={togglePlaybackSpeed}
+                title={`Playback speed: ${playbackSpeed} (${
+                  playbackSpeed === "slow"
+                    ? "0.75x"
+                    : playbackSpeed === "normal"
+                    ? "1x"
+                    : "1.25x"
+                })`}
+              >
+                {playbackSpeed === "slow" ? (
+                  <svg width="24" height="24" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+                    <circle cx="24" cy="24" r="16" fill="#fff" />
+                    <line
+                      x1="24"
+                      y1="24"
+                      x2="10"
+                      y2="28"
+                      stroke="#3b82f6"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="24" cy="24" r="2.5" fill="#3b82f6" />
+                  </svg>
+                ) : playbackSpeed === "normal" ? (
+                  <svg width="24" height="24" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+                    <circle cx="24" cy="24" r="16" fill="#fff" />
+                    <line
+                      x1="24"
+                      y1="24"
+                      x2="24"
+                      y2="8"
+                      stroke="#22c55e"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="24" cy="24" r="2.5" fill="#22c55e" />
+                  </svg>
+                ) : (
+                  <svg width="24" height="24" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
+                    <circle cx="24" cy="24" r="16" fill="#fff" />
+                    <line
+                      x1="24"
+                      y1="24"
+                      x2="38"
+                      y2="20"
+                      stroke="#f97316"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="24" cy="24" r="2.5" fill="#f97316" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
-          {/* Vertical Volume Slider Popup - Extended hover area */}
-          <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
+          {/* Main Music Player Controls - Center */}
+          <div>
+            <div className="ios-glass rounded-full px-2 py-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+              <div className="flex items-center gap-1">
+                <button
+                  className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+                  onClick={handlePreviousTrack}
+                >
+                  <SkipBack className="h-4 w-4" />
+                </button>
+                <button
+                  className="text-white bg-white/20 hover:bg-white/30 rounded-full p-3 transition-all duration-200 hover:scale-110 active:scale-95"
+                  onClick={handlePlayPause}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-5 w-5" />
+                  ) : (
+                    <Play className="h-5 w-5 ml-0.5" />
+                  )}
+                </button>
+                <button
+                  className="text-white/70 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+                  onClick={handleNextTrack}
+                >
+                  <SkipForward className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
 
-            <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
-              <div className="flex flex-col items-center gap-3">
-                <span className="text-white/70 text-xs font-medium">
-                  {isMuted ? "Muted" : `${volume[0]}%`}
-                </span>
-                <div className="h-24 w-8 flex items-center justify-center relative px-2">
-                  <div
-                    className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const y = Math.max(
-                        0,
-                        Math.min(rect.height, rect.bottom - e.clientY)
-                      );
-                      const percentage = Math.round((y / rect.height) * 100);
-                      setVolume([percentage]);
-                      setIsMuted(false);
-                    }}
-                  >
-                    <div
-                      className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
-                      style={{ height: `${isMuted ? 0 : volume[0]}%` }}
-                    ></div>
-                    <div
-                      className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
-                      style={{
-                        bottom: `${isMuted ? 0 : volume[0]}%`,
-                        left: "50%",
-                        transform: "translateX(-50%) translateY(50%)",
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        const slider = e.currentTarget.parentElement;
-                        const rect = slider!.getBoundingClientRect();
-                        const handleMouseMove = (e: MouseEvent) => {
+          {/* Volume Control - Right */}
+          <div>
+            <div className="group relative">
+              <div className="ios-glass rounded-full p-2 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15">
+                <button
+                  className="text-white/70 hover:text-white rounded-full p-2 transition-all duration-200 hover:scale-105 active:scale-95"
+                  onClick={toggleMute}
+                >
+                  {isMuted || volume[0] === 0 ? (
+                    <VolumeX className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {/* Volume Slider Popup */}
+              <div className="absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto">
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-transparent"></div>
+                <div className="ios-glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg">
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-white/70 text-xs font-medium">
+                      {isMuted ? "Muted" : `${volume[0]}%`}
+                    </span>
+                    <div className="h-24 w-8 flex items-center justify-center relative px-2">
+                      <div
+                        className="h-full w-2 bg-white/20 rounded-full relative cursor-pointer"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
                           const y = Math.max(
                             0,
                             Math.min(rect.height, rect.bottom - e.clientY)
@@ -928,28 +1029,60 @@ export default function LofiPlayer() {
                           );
                           setVolume([percentage]);
                           setIsMuted(false);
-                        };
-                        const handleMouseUp = () => {
-                          document.removeEventListener(
-                            "mousemove",
-                            handleMouseMove
-                          );
-                          document.removeEventListener(
-                            "mouseup",
-                            handleMouseUp
-                          );
-                        };
-                        document.addEventListener("mousemove", handleMouseMove);
-                        document.addEventListener("mouseup", handleMouseUp);
-                      }}
-                    ></div>
+                        }}
+                      >
+                        <div
+                          className="absolute bottom-0 w-full bg-white/70 rounded-full transition-all duration-150"
+                          style={{ height: `${isMuted ? 0 : volume[0]}%` }}
+                        ></div>
+                        <div
+                          className="absolute w-4 h-4 bg-white rounded-full shadow-lg cursor-grab active:cursor-grabbing transition-all duration-150 hover:scale-110 active:scale-125"
+                          style={{
+                            bottom: `${isMuted ? 0 : volume[0]}%`,
+                            left: "50%",
+                            transform: "translateX(-50%) translateY(50%)",
+                          }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            const slider = e.currentTarget.parentElement;
+                            const rect = slider!.getBoundingClientRect();
+                            const handleMouseMove = (e: MouseEvent) => {
+                              const y = Math.max(
+                                0,
+                                Math.min(rect.height, rect.bottom - e.clientY)
+                              );
+                              const percentage = Math.round(
+                                (y / rect.height) * 100
+                              );
+                              setVolume([percentage]);
+                              setIsMuted(false);
+                            };
+                            const handleMouseUp = () => {
+                              document.removeEventListener(
+                                "mousemove",
+                                handleMouseMove
+                              );
+                              document.removeEventListener(
+                                "mouseup",
+                                handleMouseUp
+                              );
+                            };
+                            document.addEventListener(
+                              "mousemove",
+                              handleMouseMove
+                            );
+                            document.addEventListener("mouseup", handleMouseUp);
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                    {isMuted || volume[0] === 0 ? (
+                      <VolumeX className="h-3 w-3 text-white/50" />
+                    ) : (
+                      <Volume2 className="h-3 w-3 text-white/50" />
+                    )}
                   </div>
                 </div>
-                {isMuted || volume[0] === 0 ? (
-                  <VolumeX className="h-3 w-3 text-white/50" />
-                ) : (
-                  <Volume2 className="h-3 w-3 text-white/50" />
-                )}
               </div>
             </div>
           </div>
