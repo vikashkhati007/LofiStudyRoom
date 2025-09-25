@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { themePlaylists, themes } from "@/lib/constant";
 import { Message, NotificationItem } from "@/lib/types";
+import OptionsButton from "../components/optionbutton";
 
 export default function LofiPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -894,73 +895,17 @@ export default function LofiPlayer() {
         </div>
       </div>
 
-
       {/* Music Player Controls - Bottom Center - Ultra Compact */}
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         <div className="flex items-center justify-center gap-8">
           {/* Speed Control - Left */}
-          <div>
-            <div className="ios-glass rounded-full p-1.5 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-black/30 transition-all duration-300 hover:bg-white/15 w-12 h-12 flex items-center justify-center">
-              <button
-                className="text-white/70 hover:text-white rounded-full transition-all duration-200 hover:scale-105 active:scale-95 w-10 h-10 flex items-center justify-center"
-                onClick={togglePlaybackSpeed}
-                title={`Playback speed: ${playbackSpeed} (${
-                  playbackSpeed === "slow"
-                    ? "0.75x"
-                    : playbackSpeed === "normal"
-                    ? "1x"
-                    : "1.25x"
-                })`}
-              >
-                {playbackSpeed === "slow" ? (
-                  <svg width="24" height="24" viewBox="0 0 48 48">
-                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-                    <circle cx="24" cy="24" r="16" fill="#fff" />
-                    <line
-                      x1="24"
-                      y1="24"
-                      x2="10"
-                      y2="28"
-                      stroke="#3b82f6"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="2.5" fill="#3b82f6" />
-                  </svg>
-                ) : playbackSpeed === "normal" ? (
-                  <svg width="24" height="24" viewBox="0 0 48 48">
-                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-                    <circle cx="24" cy="24" r="16" fill="#fff" />
-                    <line
-                      x1="24"
-                      y1="24"
-                      x2="24"
-                      y2="8"
-                      stroke="#22c55e"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="2.5" fill="#22c55e" />
-                  </svg>
-                ) : (
-                  <svg width="24" height="24" viewBox="0 0 48 48">
-                    <circle cx="24" cy="24" r="20" fill="#e0e0e0" />
-                    <circle cx="24" cy="24" r="16" fill="#fff" />
-                    <line
-                      x1="24"
-                      y1="24"
-                      x2="38"
-                      y2="20"
-                      stroke="#f97316"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="2.5" fill="#f97316" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
+         
+          <OptionsButton
+            playbackSpeed={playbackSpeed}
+            isShuffleMode={isShuffleMode}
+            toggleShuffleMode={toggleShuffleMode}
+            togglePlaybackSpeed={togglePlaybackSpeed}
+          />
 
           {/* Main Music Player Controls - Center */}
           <div>
