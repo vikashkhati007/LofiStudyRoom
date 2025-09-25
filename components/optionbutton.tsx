@@ -27,16 +27,19 @@ export default function OptionsButton({
           title="Player Options"
         >
           {/* Dots or Gear icon or menu icon */}
-          <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+          {!showOptions? <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
             <circle cx="4" cy="10" r="2" fill="#fff" />
             <circle cx="10" cy="10" r="2" fill="#fff" />
             <circle cx="16" cy="10" r="2" fill="#fff" />
-          </svg>
+          </svg> : 
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+            <path d="M5 5L15 15M15 5L5 15" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+          </svg>}
         </button>
       </div>
       {/* Option Popup */}
       {showOptions && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-10 min-w-max">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-10 min-w-max">
           <div className="ios-glass rounded-xl p-3 backdrop-blur-md bg-white/10 border border-white/15 shadow-lg flex flex-col gap-2">
             {/* Speed Control */}
             <button
