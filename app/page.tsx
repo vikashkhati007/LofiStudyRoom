@@ -34,9 +34,7 @@ export default function LofiPlayer() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [latestNotification, setLatestNotification] =
-    useState<NotificationItem | null>(null);
+  const [latestNotification, setLatestNotification] = useState<NotificationItem | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [currentUser, setCurrentUser] = useState<{
     id: string;
@@ -46,7 +44,7 @@ export default function LofiPlayer() {
   const processedNotificationIds = useRef<Set<string>>(new Set());
 
   // Random shuffle states
-  const [isShuffleMode, setIsShuffleMode] = useState(true); // Default to shuffle mode
+  const [isShuffleMode, setIsShuffleMode] = useState(true);
   const [shuffledPlaylist, setShuffledPlaylist] = useState<number[]>([]);
   const [playlistHistory, setPlaylistHistory] = useState<number[]>([]);
   const [currentShuffleIndex, setCurrentShuffleIndex] = useState(0);
@@ -74,12 +72,7 @@ export default function LofiPlayer() {
   const [breakVoicePlayed, setBreakVoicePlayed] = useState(false);
   const [fullVoicePlayed, setFullVoicePlayed] = useState(false);
 
-  const [playbackSpeed, setPlaybackSpeed] = useState<
-    "slow" | "normal" | "fast"
-  >("normal");
-
-  // Themes configuration
-
+  const [playbackSpeed, setPlaybackSpeed] = useState<"slow" | "normal" | "fast">("normal");
   const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"]);
 
   // Helper function to create shuffled playlist
@@ -109,7 +102,7 @@ export default function LofiPlayer() {
         setCurrentTrackIndex(shuffled[0]);
       }
     }
-  }, [playlist, createShuffledPlaylist]);
+  }, [playlist, createShuffledPlaylist, isShuffleMode]);
 
   const currentTrack = {
     title: playlist[currentTrackIndex]?.title || "No track",
@@ -133,7 +126,6 @@ export default function LofiPlayer() {
         }),
         type,
       };
-      setNotifications((prev) => [newNotification, ...prev]);
       setLatestNotification(newNotification);
     },
     []
@@ -284,7 +276,7 @@ export default function LofiPlayer() {
     if (audioRef.current) {
       try {
         if (isPlaying) {
-          await audioRef.current.pause();
+          audioRef.current.pause();
           addNotification("Music paused", "music");
         } else {
           audioRef.current.src = playlist[currentTrackIndex]?.src || "";
@@ -395,10 +387,6 @@ export default function LofiPlayer() {
   };
 
   // Handle volume changes for all audio elements
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume[0] / 100;
-  }, [volume]);
-
   useEffect(() => {
     if (rainAudioRef.current) rainAudioRef.current.volume = rainVolume[0] / 100;
   }, [rainVolume]);
@@ -576,11 +564,10 @@ export default function LofiPlayer() {
     };
   }, []);
 
-
   const displayMinutes = Math.floor(totalSecondsRemaining / 60);
   const displaySeconds = totalSecondsRemaining % 60;
 
-  // Load user data from localStorage
+  // Load user data
   useEffect(() => {
     const simulatedUser = {
       id: "user_" + Math.random().toString(36).substr(2, 9),
@@ -762,8 +749,8 @@ export default function LofiPlayer() {
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         onNewMessage={handleNewChatMessage}
-        // @ts-ignore
         currentUser={currentUser}
+
       />
 
       {/* Settings Panel */}
@@ -895,7 +882,6 @@ export default function LofiPlayer() {
       <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
         <div className="flex items-center justify-center gap-8">
           {/* Speed Control - Left */}
-         
           <OptionsButton
             playbackSpeed={playbackSpeed}
             isShuffleMode={isShuffleMode}

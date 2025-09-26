@@ -25,6 +25,7 @@ export interface WorldChatProps {
   isOpen: boolean
   onClose: () => void
   onNewMessage?: (message: Message) => void
+  currentUser: { id: string; name: string; } | null; // Add this line
 }
 
 export interface Track {
