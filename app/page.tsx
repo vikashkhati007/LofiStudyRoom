@@ -4,10 +4,10 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import DynamicIsland from "./components/dynamic-island";
-import TimerDynamicIsland from "./components/timer-dynamic-island";
-import ToastNotification from "./components/toast-notification";
-import WorldChat from "./components/world-chat";
+import DynamicIsland from "../components/dynamic-island";
+import TimerDynamicIsland from "../components/timer-dynamic-island";
+import ToastNotification from "../components/toast-notification";
+import WorldChat from "../components/world-chat";
 import {
   Play,
   Pause,
