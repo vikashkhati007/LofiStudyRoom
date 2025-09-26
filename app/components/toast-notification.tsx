@@ -3,18 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { X, MessageSquare, Music, Clock, Info } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { NotificationItem, ToastNotificationProps } from "@/lib/types"
 
-interface NotificationItem {
-  id: string
-  message: string
-  timestamp: string
-  type?: "music" | "timer" | "info" | "chat"
-}
 
-interface ToastNotificationProps {
-  notification: NotificationItem | null
-  onClose: () => void
-}
 
 export default function ToastNotification({ notification, onClose }: ToastNotificationProps) {
   const getIcon = (type: NotificationItem["type"]) => {

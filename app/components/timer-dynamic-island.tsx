@@ -5,19 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
+import { TimerDynamicIslandProps } from "@/lib/types"
 
-interface TimerDynamicIslandProps {
-  timerMinutes: number
-  timerSeconds: number
-  isTimerRunning: boolean
-  timerMode: "work" | "break"
-  workDuration: number
-  breakDuration: number
-  onStartTimer: () => void
-  onResetTimer: () => void
-  onWorkDurationChange: (val: number[]) => void
-  onBreakDurationChange: (val: number[]) => void
-}
 
 export default function TimerDynamicIsland({
   timerMinutes,

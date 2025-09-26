@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Volume2,
   VolumeX,
-  Shuffle,
 } from "lucide-react";
 import { themePlaylists, themes } from "@/lib/constant";
 import { Message, NotificationItem } from "@/lib/types";
@@ -577,9 +576,6 @@ export default function LofiPlayer() {
     };
   }, []);
 
-  const handleClearNotifications = useCallback(() => {
-    setNotifications([]);
-  }, []);
 
   const displayMinutes = Math.floor(totalSecondsRemaining / 60);
   const displaySeconds = totalSecondsRemaining % 60;

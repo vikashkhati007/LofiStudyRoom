@@ -7,7 +7,6 @@ import { databases, client, DATABASE_ID, COLLECTION_ID_MESSAGES } from "@/lib/ap
 import { ID, Query } from "appwrite"
 import { Message, WorldChatProps } from "@/lib/types"
 import { generateUserId, generateUsername } from "@/lib/functions"
-import { containerVariants, inputBarVariants, messageVariants } from "@/lib/constant"
 
 export default function WorldChat({ isOpen, onClose, onNewMessage }: WorldChatProps) {
   const [messages, setMessages] = useState<Message[]>([])

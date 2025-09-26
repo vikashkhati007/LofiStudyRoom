@@ -1,57 +1,49 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Play, Pause, SkipBack, SkipForward, Music2 } from "lucide-react" // Removed Timer, Clock
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play, Pause, SkipBack, SkipForward, Music2 } from "lucide-react"; // Removed Timer, Clock
+import { Button } from "@/components/ui/button";
+import { DynamicIslandProps } from "@/lib/types";
 
-interface Track {
-  title: string
-  artist: string
-  album: string
-  duration: number
-  currentTime: number
-}
-
-interface DynamicIslandProps {
-  track: Track
-  isPlaying: boolean
-  onPlayPause: () => void
-  onNext: () => void
-  onPrevious: () => void
-}
-
-export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, onPrevious }: DynamicIslandProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+export default function DynamicIsland({
+  track,
+  isPlaying,
+  onPlayPause,
+  onNext,
+  onPrevious,
+}: DynamicIslandProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
-  const progressPercentage = track.duration > 0 ? (track.currentTime / track.duration) * 100 : 0
+  const progressPercentage =
+    track.duration > 0 ? (track.currentTime / track.duration) * 100 : 0;
 
   // Music visualizer bars
   const VisualizerBars = () => (
-  <div className="flex items-center gap-0.5 h-4">
-    {[...Array(4)].map((_, i) => (
-      <motion.div
-        key={i}
-        className="w-0.5 bg-white/60 rounded-full"
-        animate={{
-          height: isPlaying ? [4, 12, 8, 16, 6, 10, 4] : [4, 4, 4, 4],
-        }}
-        transition={{
-          duration: 1.2,
-          repeat: Number.POSITIVE_INFINITY,
-          delay: i * 0.15,
-          ease: [0.25, 0.46, 0.45, 0.94],
-        }}
-      />
-    ))}
-  </div>
-  )
+    <div className="flex items-center gap-0.5 h-4">
+      {[...Array(4)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="w-0.5 bg-white/60 rounded-full"
+          animate={{
+            height: isPlaying ? [4, 12, 8, 16, 6, 10, 4] : [4, 4, 4, 4],
+          }}
+          transition={{
+            duration: 1.2,
+            repeat: Number.POSITIVE_INFINITY,
+            delay: i * 0.15,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
@@ -74,17 +66,17 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
         <AnimatePresence mode="wait">
           {!isExpanded ? (
             // Compact State (Music)
-           <motion.div
-  key="compact-music"
-  className="flex items-center justify-center h-full px-4"
-  initial={{ opacity: 0, scale: 0.8 }}
-  animate={{ opacity: 1, scale: 1 }}
-  exit={{ opacity: 0, scale: 0.9 }}
-  transition={{ 
-    duration: 0.3,
-    ease: [0.25, 0.46, 0.45, 0.94]
-  }}
->
+            <motion.div
+              key="compact-music"
+              className="flex items-center justify-center h-full px-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{
+                duration: 0.3,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              }}
+            >
               <div className="flex items-center gap-2">
                 <Music2 className="h-4 w-4 text-white/80" />
                 <VisualizerBars />
@@ -102,32 +94,32 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
             </motion.div>
           ) : (
             // Expanded State (Music)
-           <motion.div
-  key="expanded-music"
-  className="pt-4 px-4 pb-4 h-full flex flex-col justify-between"
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  exit={{ opacity: 0, y: -10 }}
-  transition={{ 
-    duration: 0.4,
-    ease: [0.25, 0.46, 0.45, 0.94],
-    staggerChildren: 0.1
-  }}
->
+            <motion.div
+              key="expanded-music"
+              className="pt-4 px-4 pb-4 h-full flex flex-col justify-between"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.25, 0.46, 0.45, 0.94],
+                staggerChildren: 0.1,
+              }}
+            >
               {/* Music Controls */}
               <div className="flex items-center justify-between h-full">
                 {/* Track Info */}
                 <div className="flex-1 min-w-0">
                   <motion.h4
-  className="text-white font-medium text-sm truncate"
-  initial={{ y: 8, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  transition={{ 
-    duration: 0.3,
-    ease: [0.25, 0.46, 0.45, 0.94],
-    delay: 0.1
-  }}
->
+                    className="text-white font-medium text-sm truncate"
+                    initial={{ y: 8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{
+                      duration: 0.3,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                      delay: 0.1,
+                    }}
+                  >
                     {track.title}
                   </motion.h4>
                   <motion.p
@@ -152,8 +144,8 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
                     size="icon"
                     className="text-white hover:bg-white/20 w-8 h-8 rounded-full"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onPrevious()
+                      e.stopPropagation();
+                      onPrevious();
                     }}
                   >
                     <SkipBack className="h-3 w-3" />
@@ -164,11 +156,15 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
                     size="icon"
                     className="text-white hover:bg-white/20 w-8 h-8 rounded-full"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onPlayPause()
+                      e.stopPropagation();
+                      onPlayPause();
                     }}
                   >
-                    {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
+                    {isPlaying ? (
+                      <Pause className="h-3 w-3" />
+                    ) : (
+                      <Play className="h-3 w-3 ml-0.5" />
+                    )}
                   </Button>
 
                   <Button
@@ -176,8 +172,8 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
                     size="icon"
                     className="text-white hover:bg-white/20 w-8 h-8 rounded-full"
                     onClick={(e) => {
-                      e.stopPropagation()
-                      onNext()
+                      e.stopPropagation();
+                      onNext();
                     }}
                   >
                     <SkipForward className="h-3 w-3" />
@@ -193,13 +189,13 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
                 transition={{ delay: 0.4 }}
               >
                 <motion.div
-  className="h-full bg-gradient-to-r from-blue-400 to-purple-400"
-  style={{ width: `${progressPercentage}%` }}
-  transition={{ 
-    duration: 0.2,
-    ease: [0.25, 0.46, 0.45, 0.94]
-  }}
-/>
+                  className="h-full bg-gradient-to-r from-blue-400 to-purple-400"
+                  style={{ width: `${progressPercentage}%` }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                />
               </motion.div>
 
               {/* Time Display */}
@@ -211,7 +207,8 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
               >
                 {track.duration > 0 ? (
                   <>
-                    {formatTime(track.currentTime)} / {formatTime(track.duration)}
+                    {formatTime(track.currentTime)} /{" "}
+                    {formatTime(track.duration)}
                   </>
                 ) : (
                   "Loading..."
@@ -222,5 +219,5 @@ export default function DynamicIsland({ track, isPlaying, onPlayPause, onNext, o
         </AnimatePresence>
       </motion.div>
     </div>
-  )
+  );
 }
