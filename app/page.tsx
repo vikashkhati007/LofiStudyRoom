@@ -18,6 +18,8 @@ import {
   MessageSquare,
   Volume2,
   VolumeX,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { themePlaylists, themes } from "@/lib/constant";
 import { Message, NotificationItem } from "@/lib/types";
@@ -71,6 +73,9 @@ export default function LofiPlayer() {
   // Voice countdown tracking
   const [breakVoicePlayed, setBreakVoicePlayed] = useState(false);
   const [fullVoicePlayed, setFullVoicePlayed] = useState(false);
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [playbackSpeed, setPlaybackSpeed] = useState<"slow" | "normal" | "fast">("normal");
   const [playlist, setPlaylist] = useState(themePlaylists["study-lofi"]);
@@ -576,6 +581,38 @@ export default function LofiPlayer() {
     setCurrentUser(simulatedUser);
   }, []);
 
+  // Fullscreen functionality
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+        addNotification("Entered fullscreen mode", "info");
+      }).catch((err) => {
+        console.error("Error attempting to enable fullscreen:", err);
+        addNotification("Failed to enter fullscreen", "info");
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+        addNotification("Exited fullscreen mode", "info");
+      }).catch((err) => {
+        console.error("Error attempting to exit fullscreen:", err);
+      });
+    }
+  };
+
+  // Listen for fullscreen changes (e.g., when user presses ESC)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   // Function to load theme-based music
   const loadThemeMusic = (themeId: string) => {
     setPlaylist(
@@ -705,8 +742,25 @@ export default function LofiPlayer() {
         onBreakDurationChange={(val) => setBreakDuration(val)}
       />
 
+      <div className="absolute left-4 top-4 z-20 flex gap-2">
+
+       {/* Fullscreen Button */}
+        <Button
+          onClick={toggleFullscreen}
+          className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
+          title={isFullscreen ? "Exit Fullscreen (ESC)" : "Enter Fullscreen"}
+        >
+          {isFullscreen ? (
+            <Minimize className="h-5 w-5" />
+          ) : (
+            <Maximize className="h-5 w-5" />
+          )}
+        </Button>
+        </div>
+
       {/* Settings Toggle Button */}
-      <div className="absolute right-4 top-4 z-20">
+      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        {/* Settings Button */}
         <Button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
           className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
