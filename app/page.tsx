@@ -66,6 +66,7 @@ export default function LofiPlayer() {
   const breakVoiceRef = useRef<HTMLAudioElement>(null);
   const fullVoiceRef = useRef<HTMLAudioElement>(null);
   const stopSfxRef = useRef<HTMLAudioElement>(null);
+  const studyEndRef = useRef<HTMLAudioElement>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(50);
@@ -73,6 +74,10 @@ export default function LofiPlayer() {
   // Voice countdown tracking
   const [breakVoicePlayed, setBreakVoicePlayed] = useState(false);
   const [fullVoicePlayed, setFullVoicePlayed] = useState(false);
+  const [studyStartPlayed, setStudyStartPlayed] = useState(false);
+  const [studyEndPlayed, setStudyEndPlayed] = useState(false);
+  const [breakStartPlayed, setBreakStartPlayed] = useState(false);
+  const [breakEndPlayed, setBreakEndPlayed] = useState(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -437,15 +442,22 @@ export default function LofiPlayer() {
   // Timer functions
   const startTimer = () => {
     if (isTimerRunning) {
+      // Pause timer
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
       setIsTimerRunning(false);
+      // Reset all audio flags
       setBreakVoicePlayed(false);
       setFullVoicePlayed(false);
+      setStudyStartPlayed(false);
+      setStudyEndPlayed(false);
+      setBreakStartPlayed(false);
+      setBreakEndPlayed(false);
       addNotification("Timer paused", "timer");
     } else {
+      // Start timer
       if (Notification.permission !== "granted") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
@@ -454,56 +466,56 @@ export default function LofiPlayer() {
         });
       }
 
+      // Play start audio immediately based on mode
+      if (timerMode === "work") {
+        if (fullVoiceRef.current && !studyStartPlayed) {
+          fullVoiceRef.current.play();
+          setStudyStartPlayed(true);
+        }
+      } else if (timerMode === "break") {
+        if (breakVoiceRef.current && !breakStartPlayed) {
+          breakVoiceRef.current.play();
+          setBreakStartPlayed(true);
+        }
+      }
+
       setIsTimerRunning(true);
-      setBreakVoicePlayed(false);
-      setFullVoicePlayed(false);
       addNotification(`Timer started: ${timerMode} session`, "timer");
 
       timerIntervalRef.current = setInterval(() => {
         setTotalSecondsRemaining((prevTotalSeconds) => {
-          // Check for voice countdown triggers
-          if (
-            timerMode === "break" &&
-            prevTotalSeconds === 10 &&
-            !breakVoicePlayed
-          ) {
-            if (breakVoiceRef.current) {
-              breakVoiceRef.current.play();
-              setBreakVoicePlayed(true);
-
-              // Set up stop sound after voice
-              breakVoiceRef.current.onended = () => {
-                if (stopSfxRef.current) stopSfxRef.current.play();
-              };
+          // Audio triggers for break mode
+          if (timerMode === "break") {
+            // 10 seconds before break ends - play break end audio
+            if (prevTotalSeconds === 10 && !breakEndPlayed) {
+              if (stopSfxRef.current) {
+                stopSfxRef.current.play();
+                setBreakEndPlayed(true);
+              }
             }
           }
 
-          if (
-            timerMode === "work" &&
-            prevTotalSeconds === 11 &&
-            !fullVoicePlayed
-          ) {
-            if (fullVoiceRef.current) {
-              fullVoiceRef.current.play();
-              setFullVoicePlayed(true);
-
-              // Set up stop sound after voice
-              fullVoiceRef.current.onended = () => {
-                if (stopSfxRef.current) stopSfxRef.current.play();
-              };
+          // Audio triggers for work mode
+          if (timerMode === "work") {
+            // 10 seconds before work ends - play work end audio
+            if (prevTotalSeconds === 10 && !studyEndPlayed) {
+              if (studyEndRef.current) {
+                studyEndRef.current.play();
+                setStudyEndPlayed(true);
+              }
             }
           }
 
+          // Timer finished
           if (prevTotalSeconds <= 0) {
             if (timerIntervalRef.current) {
               clearInterval(timerIntervalRef.current);
               timerIntervalRef.current = null;
             }
             setIsTimerRunning(false);
-            setBreakVoicePlayed(false);
-            setFullVoicePlayed(false);
 
             if (timerMode === "work") {
+              // Work session finished, switch to break
               if (Notification.permission === "granted") {
                 new Notification("Work session finished!", {
                   body: "Time for a break!",
@@ -515,8 +527,16 @@ export default function LofiPlayer() {
                 "timer"
               );
               setTimerMode("break");
+              
+              // Reset audio flags for break mode
+              setBreakStartPlayed(false);
+              setBreakEndPlayed(false);
+              setStudyStartPlayed(false);
+              setStudyEndPlayed(false);
+              
               return breakDuration[0] * 60;
             } else {
+              // Break session finished, switch to work
               if (Notification.permission === "granted") {
                 new Notification("Break session finished!", {
                   body: "Time for a new work session!",
@@ -528,6 +548,13 @@ export default function LofiPlayer() {
                 "timer"
               );
               setTimerMode("work");
+              
+              // Reset audio flags for work mode
+              setBreakStartPlayed(false);
+              setBreakEndPlayed(false);
+              setStudyStartPlayed(false);
+              setStudyEndPlayed(false);
+              
               return workDuration[0] * 60;
             }
           } else {
@@ -546,8 +573,13 @@ export default function LofiPlayer() {
     setIsTimerRunning(false);
     setTimerMode("work");
     setTotalSecondsRemaining(workDuration[0] * 60);
+    // Reset all audio flags
     setBreakVoicePlayed(false);
     setFullVoicePlayed(false);
+    setStudyStartPlayed(false);
+    setStudyEndPlayed(false);
+    setBreakStartPlayed(false);
+    setBreakEndPlayed(false);
     addNotification("Timer reset", "timer");
   };
 
@@ -677,19 +709,25 @@ export default function LofiPlayer() {
       />
       <audio
         ref={breakVoiceRef}
-        src="music/time/break/voice.mp3"
+        src="/music/time/break/start.mp3"
         preload="auto"
         crossOrigin="anonymous"
       />
       <audio
         ref={fullVoiceRef}
-        src="music/time/full/voice.mp3"
+        src="/music/time/full/start.mp3"
         preload="auto"
         crossOrigin="anonymous"
       />
       <audio
         ref={stopSfxRef}
-        src="music/time/stop.mp3"
+        src="/music/time/break/end.mp3" 
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+      <audio
+        ref={studyEndRef}
+        src="/music/time/full/end.mp3"
         preload="auto"
         crossOrigin="anonymous"
       />
@@ -742,9 +780,9 @@ export default function LofiPlayer() {
         onBreakDurationChange={(val) => setBreakDuration(val)}
       />
 
-      <div className="absolute left-4 top-4 z-20 flex gap-2">
-
-       {/* Fullscreen Button */}
+      {/* Settings Toggle Button */}
+      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        {/* Fullscreen Button */}
         <Button
           onClick={toggleFullscreen}
           className="ios-glass rounded-full w-12 h-12 p-0 text-white hover:bg-white/20 border-white/20"
@@ -756,10 +794,7 @@ export default function LofiPlayer() {
             <Maximize className="h-5 w-5" />
           )}
         </Button>
-        </div>
-
-      {/* Settings Toggle Button */}
-      <div className="absolute right-4 top-4 z-20 flex gap-2">
+        
         {/* Settings Button */}
         <Button
           onClick={() => setIsSettingsOpen(!isSettingsOpen)}
